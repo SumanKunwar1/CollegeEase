@@ -62,6 +62,14 @@ import JobAndPlacementDetails from "./pages/insight/JobAndPlacementDetails";
 
 import ConnectPage from "./pages/ConnectPage";
 
+import BlogPage from "./pages/footer/Blog";
+import BlogDetails from "./pages/footer/BlogDetails";
+import FAQsPage from "./pages/footer/Faq";
+import SupportPage from "./pages/footer/Support";
+import PrivacyPolicyPage from "./pages/footer/PrivacyPolicy";
+import CookiePolicyPage from "./pages/footer/Cookies";
+import TermsOfServicePage from "./pages/footer/TermsOfService";
+
 import AuthPage from "./pages/auth/Auth";
 import { DashboardLayout } from "./components/auth/DashboardLayout";
 import InstituteDashboard from "./pages/auth/Institute";
@@ -105,6 +113,30 @@ import AdminStudentRegistration from "./pages/donation/DonationStudentRegistrati
 import AdminDonationSuccessStories from "./pages/admin/donation/DonationSuccessStories";
 import AdminHowItWorks from "./pages/donation/HowItWorks";
 import AdminStudentProfiles from "./pages/admin/donation/StudentProfile";
+
+//admin find mentor
+import { AdminMentorsPage } from "./pages/admin/montorship/AdminFindMentor";
+import { AdminGroupSessionsPage } from "./pages/admin/montorship/AdminGroupSession";
+import { AdminResourcesPage } from "./pages/admin/montorship/AdminResources";
+
+import AdminScholarshipsPage from "./pages/admin/scholarship/AdminScholarship";
+
+//admin insights
+
+import { AdminExpertInterviewsPage } from "./pages/admin/insights/AdminExpertInterviewsPage";
+import { AdminIndustryTrendsPage } from "./pages/admin/insights/AdminIndustryTrendsPage";
+import { AdminJobAndPlacementPage } from "./pages/admin/insights/AdminJobAndPlacementPage";
+import { AdminJobMarketAnalysisPage } from "./pages/admin/insights/AdminJobMarketAnalysisPage";
+import { AdminSkillDevelopmentPage } from "./pages/admin/insights/AdminSkillDevelopmentPage";
+//admin footer
+
+import { AdminBlogPage } from "./pages/admin/footer/AdminBlog";
+import { AdminBlogDetailPage } from "./pages/admin/footer/AdminBlogDetails";
+import { AdminFAQPage } from "./pages/admin/footer/AdminFaqs";
+import { AdminCookiesPage } from "./pages/admin/footer/AdminCookies";
+import { AdminPrivacyPolicyPage } from "./pages/admin/footer/AdminPrivacyPolicy";
+import { AdminTermsOfServicePage } from "./pages/admin/footer/AdmingTermsOfService";
+import { AdminSupportPage } from "./pages/admin/footer/AdminSupport";
 
 function PrivateRoute({ element }: { element: JSX.Element }) {
   const isAuthenticated = !!sessionStorage.getItem("isAuthenticated");
@@ -268,6 +300,15 @@ function AppContent() {
             element={<JobAndPlacementDetails />}
           />
           <Route path="/connect" element={<ConnectPage />} />
+
+          <Route path="/blog" element={<BlogPage />} />
+          <Route path="/blog/:title" element={<BlogDetails />} />
+          <Route path="/faq" element={<FAQsPage />} />
+          <Route path="/support" element={<SupportPage />} />
+          <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
+          <Route path="/cookie-policy" element={<CookiePolicyPage />} />
+          <Route path="/terms-of-service" element={<TermsOfServicePage />} />
+
           <Route path="/sign-up" element={<AuthPage />} />
           <Route path="/dashboard" element={<DashboardLayout />}>
             <Route path="institute/:id" element={<InstituteDashboard />} />
@@ -502,6 +543,206 @@ function AppContent() {
                 element={
                   <AdminLayout>
                     <AdminStudentRegistration />
+                  </AdminLayout>
+                }
+              />
+            }
+          />
+          <Route
+            path="/admin/mentorship/find-mentor"
+            element={
+              <PrivateRoute
+                element={
+                  <AdminLayout>
+                    <AdminMentorsPage />
+                  </AdminLayout>
+                }
+              />
+            }
+          />
+          <Route
+            path="/admin/mentorship/group-session"
+            element={
+              <PrivateRoute
+                element={
+                  <AdminLayout>
+                    <AdminGroupSessionsPage />
+                  </AdminLayout>
+                }
+              />
+            }
+          />
+          <Route
+            path="/admin/mentorship/resources"
+            element={
+              <PrivateRoute
+                element={
+                  <AdminLayout>
+                    <AdminResourcesPage />
+                  </AdminLayout>
+                }
+              />
+            }
+          />
+          <Route
+            path="/admin/scholarships/scholarships-finder"
+            element={
+              <PrivateRoute
+                element={
+                  <AdminLayout>
+                    <AdminScholarshipsPage />
+                  </AdminLayout>
+                }
+              />
+            }
+          />
+          <Route
+            path="/admin/insights/expert-interviews"
+            element={
+              <PrivateRoute
+                element={
+                  <AdminLayout>
+                    <AdminExpertInterviewsPage />
+                  </AdminLayout>
+                }
+              />
+            }
+          />
+          <Route
+            path="/admin/insights/industry-trends"
+            element={
+              <PrivateRoute
+                element={
+                  <AdminLayout>
+                    <AdminIndustryTrendsPage />
+                  </AdminLayout>
+                }
+              />
+            }
+          />
+
+          <Route
+            path="/admin/insights/skill-development"
+            element={
+              <PrivateRoute
+                element={
+                  <AdminLayout>
+                    <AdminSkillDevelopmentPage />
+                  </AdminLayout>
+                }
+              />
+            }
+          />
+
+          <Route
+            path="/admin/insights/job-and-internship"
+            element={
+              <PrivateRoute
+                element={
+                  <AdminLayout>
+                    <AdminJobAndPlacementPage />
+                  </AdminLayout>
+                }
+              />
+            }
+          />
+
+          <Route
+            path="/admin/insights/job-market-analysis"
+            element={
+              <PrivateRoute
+                element={
+                  <AdminLayout>
+                    <AdminJobMarketAnalysisPage />
+                  </AdminLayout>
+                }
+              />
+            }
+          />
+
+          <Route
+            path="/admin/blog"
+            element={
+              <PrivateRoute
+                element={
+                  <AdminLayout>
+                    <AdminBlogPage />
+                  </AdminLayout>
+                }
+              />
+            }
+          />
+
+          <Route
+            path="/admin/blog/:id"
+            element={
+              <PrivateRoute
+                element={
+                  <AdminLayout>
+                    <AdminBlogDetailPage id={0} />
+                  </AdminLayout>
+                }
+              />
+            }
+          />
+          <Route
+            path="/admin/cookies"
+            element={
+              <PrivateRoute
+                element={
+                  <AdminLayout>
+                    <AdminCookiesPage />
+                  </AdminLayout>
+                }
+              />
+            }
+          />
+
+          <Route
+            path="/admin/privacy-policy"
+            element={
+              <PrivateRoute
+                element={
+                  <AdminLayout>
+                    <AdminPrivacyPolicyPage />
+                  </AdminLayout>
+                }
+              />
+            }
+          />
+
+          <Route
+            path="/admin/faqs"
+            element={
+              <PrivateRoute
+                element={
+                  <AdminLayout>
+                    <AdminFAQPage />
+                  </AdminLayout>
+                }
+              />
+            }
+          />
+          <Route
+            path="/admin/terms-of-service"
+            element={
+              <PrivateRoute
+                element={
+                  <AdminLayout>
+                    <AdminTermsOfServicePage />
+                  </AdminLayout>
+                }
+              />
+            }
+          />
+
+          <Route
+            path="/admin/support"
+            element={
+              <PrivateRoute
+                element={
+                  <AdminLayout>
+                    <AdminSupportPage />
                   </AdminLayout>
                 }
               />

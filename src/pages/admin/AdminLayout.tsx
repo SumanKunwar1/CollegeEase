@@ -86,7 +86,6 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
       icon: MessageSquare,
       dropdown: [
         { name: "Find a Mentor", path: "/admin/mentorship/find-mentor" },
-        { name: "Become a Mentor", path: "/admin/mentorship/become-mentor" },
         { name: "Group Sessions", path: "/admin/mentorship/group-session" },
         { name: "Resources", path: "/admin/mentorship/resources" },
       ],
@@ -119,8 +118,18 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
       title: "Footer",
       icon: UsersRound,
       dropdown: [
-        { name: "FAQ", path: "/admin/mentorship/find-mentor" },
-        { name: "Blogs", path: "/admin/mentorship/become-mentor" },
+        { name: "FAQ", path: "/admin/faqs" },
+        { name: "Blogs", path: "/admin/blog" },
+        { name: "Cookies", path: "/admin/cookies" },
+        { name: "Privacy Policy", path: "/admin/privacy-policy" },
+        {
+          name: "Terms Of Service",
+          path: "/admin/terms-of-service",
+        },
+        {
+          name: "Support",
+          path: "/admin/support",
+        },
       ],
     },
   ];
