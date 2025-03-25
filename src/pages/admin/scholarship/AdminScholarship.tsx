@@ -1,21 +1,17 @@
 "use client";
 
-import type React from "react";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Search,
+  Filter,
+  Calendar,
+  DollarSign,
   Plus,
   Edit,
   Trash2,
-  Calendar,
-  DollarSign,
-  Filter,
-  ChevronDown,
-  ChevronUp,
 } from "lucide-react";
 import { Button } from "../../../components/ui/button";
-import { Input } from "../../../components/ui/input";
-import { Card, CardContent } from "../../../components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -23,643 +19,413 @@ import {
   DialogTitle,
   DialogFooter,
 } from "../../../components/ui/dialog";
-import { useToast } from "../../../components/ui/use-toast";
+import { Input } from "../../../components/ui/input";
+import { Label } from "../../../components/ui/label";
+import { Textarea } from "../../../components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../../../components/ui/select";
+import { scholarshipsData } from "../../../data/scholarshipdata";
+import type { ScholarshipDetails } from "../../../types/scholarship";
 
-interface Scholarship {
-  id: string;
-  title: string;
-  provider: string;
-  amount: string;
-  deadline: string;
-  eligibility: string[];
-  description: string;
-  status: "active" | "draft" | "expired";
-}
+// Define the allowed types for status and scholarship type
+type ScholarshipStatus = "Open" | "Closing Soon" | "Closed";
+type ScholarshipType =
+  | "Merit-based"
+  | "Need-based"
+  | "Research"
+  | "Sports"
+  | "Cultural";
 
-const AdminScholarshipsPage: React.FC = () => {
-  const { toast } = useToast();
-  const [scholarships, setScholarships] = useState<Scholarship[]>([
-    {
-      id: "1",
-      title: "Merit Excellence Scholarship",
-      provider: "Global Education Foundation",
-      amount: "$10,000",
-      deadline: "2025-06-30",
-      eligibility: ["GPA 3.5+", "STEM Major", "Undergraduate"],
-      description:
-        "Scholarship for outstanding students pursuing STEM degrees.",
-      status: "active",
-    },
-    {
-      id: "2",
-      title: "Future Leaders Grant",
-      provider: "Leadership Institute",
-      amount: "$5,000",
-      deadline: "2025-07-15",
-      eligibility: ["Leadership Experience", "Community Service", "Any Major"],
-      description:
-        "Supporting students who demonstrate exceptional leadership potential.",
-      status: "active",
-    },
-    {
-      id: "3",
-      title: "Diversity in Tech Scholarship",
-      provider: "Tech Innovation Fund",
-      amount: "$15,000",
-      deadline: "2025-08-01",
-      eligibility: [
-        "Computer Science",
-        "Underrepresented Groups",
-        "Bachelor/Master",
-      ],
-      description:
-        "Promoting diversity in technology fields through education.",
-      status: "draft",
-    },
-  ]);
-
-  const [searchQuery, setSearchQuery] = useState("");
+const AdminScholarship = () => {
+  const navigate = useNavigate();
+  const [scholarships, setScholarships] =
+    useState<ScholarshipDetails[]>(scholarshipsData);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [currentScholarship, setCurrentScholarship] =
-    useState<Scholarship | null>(null);
-  const [formData, setFormData] = useState<Omit<Scholarship, "id">>({
-    title: "",
+  const [scholarshipToDelete, setScholarshipToDelete] = useState<string | null>(
+    null
+  );
+  const [newScholarship, setNewScholarship] = useState<
+    Partial<ScholarshipDetails>
+  >({
+    name: "",
     provider: "",
     amount: "",
     deadline: "",
-    eligibility: [],
-    description: "",
-    status: "draft",
+    type: "Merit-based",
+    status: "Open",
+    eligibleCountries: [],
+    vision: {
+      purpose: "",
+      impact: "", // Add empty strings for required fields
+      goals: "", // Add empty strings for required fields
+    },
   });
-  const [eligibilityInput, setEligibilityInput] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [isFilterOpen, setIsFilterOpen] = useState(false);
-
-  // Filter scholarships based on search query and status
-  const filteredScholarships = scholarships.filter((scholarship) => {
-    const matchesSearch =
-      scholarship.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      scholarship.provider.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      scholarship.description.toLowerCase().includes(searchQuery.toLowerCase());
-
-    const matchesStatus =
-      statusFilter === "all" || scholarship.status === statusFilter;
-
-    return matchesSearch && matchesStatus;
-  });
-
-  const handleInputChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >
-  ) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleAddEligibility = () => {
-    if (eligibilityInput.trim()) {
-      setFormData((prev) => ({
-        ...prev,
-        eligibility: [...prev.eligibility, eligibilityInput.trim()],
-      }));
-      setEligibilityInput("");
-    }
-  };
-
-  const handleRemoveEligibility = (index: number) => {
-    setFormData((prev) => ({
-      ...prev,
-      eligibility: prev.eligibility.filter((_, i) => i !== index),
-    }));
-  };
 
   const handleAddScholarship = () => {
-    const newScholarship: Scholarship = {
-      ...formData,
-      id: Date.now().toString(),
+    const id = (
+      Math.max(...scholarships.map((s) => parseInt(s.id))) + 1
+    ).toString();
+    const scholarship: ScholarshipDetails = {
+      id,
+      coverImage: "",
+      name: newScholarship.name || "",
+      provider: newScholarship.provider || "",
+      type: (newScholarship.type as ScholarshipType) || "Merit-based",
+      deadline:
+        newScholarship.deadline || new Date().toISOString().split("T")[0],
+      amount: newScholarship.amount || "$0",
+      eligibleCountries: newScholarship.eligibleCountries || [],
+      requirements: {
+        minimumGPA: 3.0,
+        preferredGPA: 3.5,
+        competitiveGPA: 3.8,
+        majorWeights: {},
+        countryDiversity: { priority: [], weight: 1 },
+      },
+      vision: {
+        purpose: newScholarship.vision?.purpose || "",
+        impact: newScholarship.vision?.impact || "", // Ensure impact is provided
+        goals: newScholarship.vision?.goals || "", // Ensure goals is provided
+      },
+      institution: {
+        name: "",
+        history: "",
+        achievements: [],
+        accreditation: [],
+      },
+      statistics: {
+        averageGPAAwarded: 0,
+        totalApplications: 0,
+        acceptanceRate: 0,
+        majorDistribution: {},
+      },
+      eligibility: {
+        academicRequirements: [],
+        financialNeed: "",
+        nationality: [],
+        ageLimit: "",
+        studyLevel: [],
+        languageRequirements: [],
+        specialRequirements: [],
+      },
+      benefits: {
+        coverage: [],
+        additionalPerks: [],
+      },
+      applicationProcess: [],
+      status: (newScholarship.status as ScholarshipStatus) || "Open",
     };
 
-    setScholarships((prev) => [...prev, newScholarship]);
+    setScholarships([...scholarships, scholarship]);
     setIsAddDialogOpen(false);
-    resetForm();
-
-    toast({
-      title: "Scholarship Added",
-      description: `${newScholarship.title} has been successfully added.`,
-    });
-  };
-
-  const handleEditScholarship = () => {
-    if (!currentScholarship) return;
-
-    setScholarships((prev) =>
-      prev.map((scholarship) =>
-        scholarship.id === currentScholarship.id
-          ? { ...formData, id: currentScholarship.id }
-          : scholarship
-      )
-    );
-
-    setIsEditDialogOpen(false);
-    resetForm();
-
-    toast({
-      title: "Scholarship Updated",
-      description: `${formData.title} has been successfully updated.`,
+    setNewScholarship({
+      name: "",
+      provider: "",
+      amount: "",
+      deadline: "",
+      type: "Merit-based",
+      status: "Open",
+      eligibleCountries: [],
+      vision: {
+        purpose: "",
+        impact: "",
+        goals: "",
+      },
     });
   };
 
   const handleDeleteScholarship = () => {
-    if (!currentScholarship) return;
-
-    setScholarships((prev) =>
-      prev.filter((scholarship) => scholarship.id !== currentScholarship.id)
-    );
-
-    setIsDeleteDialogOpen(false);
-
-    toast({
-      title: "Scholarship Deleted",
-      description: `${currentScholarship.title} has been successfully deleted.`,
-    });
+    if (scholarshipToDelete) {
+      setScholarships(scholarships.filter((s) => s.id !== scholarshipToDelete));
+      setScholarshipToDelete(null);
+      setIsDeleteDialogOpen(false);
+    }
   };
 
-  const openEditDialog = (scholarship: Scholarship) => {
-    setCurrentScholarship(scholarship);
-    setFormData({
-      title: scholarship.title,
-      provider: scholarship.provider,
-      amount: scholarship.amount,
-      deadline: scholarship.deadline,
-      eligibility: [...scholarship.eligibility],
-      description: scholarship.description,
-      status: scholarship.status,
-    });
-    setIsEditDialogOpen(true);
-  };
-
-  const openDeleteDialog = (scholarship: Scholarship) => {
-    setCurrentScholarship(scholarship);
+  const confirmDelete = (id: string) => {
+    setScholarshipToDelete(id);
     setIsDeleteDialogOpen(true);
   };
 
-  const resetForm = () => {
-    setFormData({
-      title: "",
-      provider: "",
-      amount: "",
-      deadline: "",
-      eligibility: [],
-      description: "",
-      status: "draft",
-    });
-    setEligibilityInput("");
-    setCurrentScholarship(null);
-  };
-
   return (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Manage Scholarships</h1>
-        <Button onClick={() => setIsAddDialogOpen(true)}>
-          <Plus className="h-4 w-4 mr-2" />
-          Add Scholarship
-        </Button>
-      </div>
-
-      <div className="mb-6 flex flex-col md:flex-row gap-4">
-        <div className="relative flex-grow">
-          <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
-          <Input
-            type="text"
-            placeholder="Search scholarships..."
-            className="pl-10"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-        </div>
-        <div className="relative">
-          <Button
-            variant="outline"
-            className="w-full md:w-auto flex items-center justify-between"
-            onClick={() => setIsFilterOpen(!isFilterOpen)}
-          >
-            <Filter className="h-4 w-4 mr-2" />
-            Filter by Status
-            {isFilterOpen ? (
-              <ChevronUp className="h-4 w-4 ml-2" />
-            ) : (
-              <ChevronDown className="h-4 w-4 ml-2" />
-            )}
-          </Button>
-
-          {isFilterOpen && (
-            <div className="absolute z-10 mt-2 w-48 bg-white rounded-md shadow-lg">
-              <div className="py-1">
-                <button
-                  className={`block px-4 py-2 text-sm w-full text-left ${
-                    statusFilter === "all" ? "bg-gray-100" : ""
-                  }`}
-                  onClick={() => {
-                    setStatusFilter("all");
-                    setIsFilterOpen(false);
-                  }}
-                >
-                  All
-                </button>
-                <button
-                  className={`block px-4 py-2 text-sm w-full text-left ${
-                    statusFilter === "active" ? "bg-gray-100" : ""
-                  }`}
-                  onClick={() => {
-                    setStatusFilter("active");
-                    setIsFilterOpen(false);
-                  }}
-                >
-                  Active
-                </button>
-                <button
-                  className={`block px-4 py-2 text-sm w-full text-left ${
-                    statusFilter === "draft" ? "bg-gray-100" : ""
-                  }`}
-                  onClick={() => {
-                    setStatusFilter("draft");
-                    setIsFilterOpen(false);
-                  }}
-                >
-                  Draft
-                </button>
-                <button
-                  className={`block px-4 py-2 text-sm w-full text-left ${
-                    statusFilter === "expired" ? "bg-gray-100" : ""
-                  }`}
-                  onClick={() => {
-                    setStatusFilter("expired");
-                    setIsFilterOpen(false);
-                  }}
-                >
-                  Expired
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-
-      <div className="grid gap-6">
-        {filteredScholarships.length > 0 ? (
-          filteredScholarships.map((scholarship) => (
-            <Card key={scholarship.id} className="overflow-hidden">
-              <CardContent className="p-6">
-                <div className="flex flex-col md:flex-row md:items-center md:justify-between">
-                  <div>
-                    <div className="flex items-center">
-                      <h2 className="text-xl font-semibold text-gray-900">
-                        {scholarship.title}
-                      </h2>
-                      <span
-                        className={`ml-3 px-2 py-1 text-xs rounded-full ${
-                          scholarship.status === "active"
-                            ? "bg-green-100 text-green-800"
-                            : scholarship.status === "draft"
-                            ? "bg-yellow-100 text-yellow-800"
-                            : "bg-red-100 text-red-800"
-                        }`}
-                      >
-                        {scholarship.status.charAt(0).toUpperCase() +
-                          scholarship.status.slice(1)}
-                      </span>
-                    </div>
-                    <p className="mt-1 text-sm text-gray-500">
-                      by {scholarship.provider}
-                    </p>
-                  </div>
-                  <div className="mt-4 md:mt-0">
-                    <span className="inline-flex items-center px-4 py-2 rounded-full bg-green-100 text-green-800 text-sm font-medium">
-                      <DollarSign className="h-4 w-4 mr-1" />
-                      {scholarship.amount}
-                    </span>
-                  </div>
-                </div>
-
-                <p className="mt-4 text-gray-600">{scholarship.description}</p>
-
-                <div className="mt-6 flex flex-wrap gap-2">
-                  {scholarship.eligibility.map((criteria, index) => (
-                    <span
-                      key={index}
-                      className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800"
-                    >
-                      {criteria}
-                    </span>
-                  ))}
-                </div>
-
-                <div className="mt-6 flex flex-col sm:flex-row sm:items-center sm:justify-between">
-                  <div className="flex items-center text-sm text-gray-500">
-                    <Calendar className="h-4 w-4 mr-1" />
-                    Deadline:{" "}
-                    {new Date(scholarship.deadline).toLocaleDateString()}
-                  </div>
-                  <div className="mt-4 sm:mt-0 flex space-x-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => openEditDialog(scholarship)}
-                    >
-                      <Edit className="h-4 w-4 mr-2" />
-                      Edit
-                    </Button>
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => openDeleteDialog(scholarship)}
-                    >
-                      <Trash2 className="h-4 w-4 mr-2" />
-                      Delete
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))
-        ) : (
-          <div className="text-center py-10">
-            <p className="text-gray-500">
-              No scholarships found matching your criteria.
+    <div className="min-h-screen bg-gray-50 pt-20">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">
+              Manage Scholarships
+            </h1>
+            <p className="mt-2 text-gray-600">
+              Add, edit, or remove scholarship opportunities
             </p>
           </div>
-        )}
+
+          <div className="mt-4 md:mt-0 flex space-x-4">
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Search scholarships..."
+                className="pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+              />
+              <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
+            </div>
+            <button className="flex items-center px-4 py-2 border border-gray-300 rounded-md bg-white hover:bg-gray-50">
+              <Filter className="h-5 w-5 mr-2" />
+              Filters
+            </button>
+            <Button
+              onClick={() => setIsAddDialogOpen(true)}
+              className="flex items-center bg-green-600 hover:bg-green-700"
+            >
+              <Plus className="h-5 w-5 mr-2" />
+              Add Scholarship
+            </Button>
+          </div>
+        </div>
+
+        <div className="grid gap-6">
+          {scholarships.map((scholarship) => (
+            <div
+              key={scholarship.id}
+              className="bg-white rounded-lg shadow-md p-6"
+            >
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between">
+                <div>
+                  <h2 className="text-xl font-semibold text-gray-900">
+                    {scholarship.name}
+                  </h2>
+                  <p className="mt-1 text-sm text-gray-500">
+                    by {scholarship.provider}
+                  </p>
+                </div>
+                <div className="mt-4 md:mt-0">
+                  <span className="inline-flex items-center px-4 py-2 rounded-full bg-green-100 text-green-800 text-sm font-medium">
+                    <DollarSign className="h-4 w-4 mr-1" />
+                    {scholarship.amount}
+                  </span>
+                </div>
+              </div>
+
+              <p className="mt-4 text-gray-600">{scholarship.vision.purpose}</p>
+
+              <div className="mt-6 flex flex-wrap gap-2">
+                {scholarship.eligibleCountries.map((country) => (
+                  <span
+                    key={country}
+                    className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800"
+                  >
+                    {country}
+                  </span>
+                ))}
+              </div>
+
+              <div className="mt-6 flex flex-col sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-center text-sm text-gray-500">
+                  <Calendar className="h-4 w-4 mr-1" />
+                  Deadline:{" "}
+                  {new Date(scholarship.deadline).toLocaleDateString()}
+                </div>
+                <div className="mt-4 sm:mt-0 flex space-x-2">
+                  <Button
+                    onClick={() =>
+                      navigate(`/admin/scholarships/${scholarship.id}/edit`)
+                    }
+                    variant="outline"
+                    className="inline-flex items-center"
+                  >
+                    <Edit className="h-4 w-4 mr-2" />
+                    Edit
+                  </Button>
+                  <Button
+                    onClick={() =>
+                      navigate(`/admin/scholarships/${scholarship.id}`)
+                    }
+                    className="inline-flex items-center bg-indigo-600 hover:bg-indigo-700"
+                  >
+                    View Details
+                  </Button>
+                  <Button
+                    onClick={() => confirmDelete(scholarship.id)}
+                    variant="destructive"
+                    className="inline-flex items-center"
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete
+                  </Button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* Add Scholarship Dialog */}
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="sm:max-w-[600px] bg-white text-black">
           <DialogHeader>
             <DialogTitle>Add New Scholarship</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Scholarship Title
-              </label>
-              <Input
-                name="title"
-                value={formData.title}
-                onChange={handleInputChange}
-                placeholder="Enter scholarship title"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Provider
-              </label>
-              <Input
-                name="provider"
-                value={formData.provider}
-                onChange={handleInputChange}
-                placeholder="Enter provider name"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Amount
-              </label>
-              <Input
-                name="amount"
-                value={formData.amount}
-                onChange={handleInputChange}
-                placeholder="e.g. $10,000"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Deadline
-              </label>
-              <Input
-                type="date"
-                name="deadline"
-                value={formData.deadline}
-                onChange={handleInputChange}
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Description
-              </label>
-              <textarea
-                name="description"
-                value={formData.description}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                rows={3}
-                placeholder="Enter scholarship description"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Eligibility Criteria
-              </label>
-              <div className="flex space-x-2">
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-1 gap-4">
+              <div>
+                <Label htmlFor="name">Scholarship Name</Label>
                 <Input
-                  value={eligibilityInput}
-                  onChange={(e) => setEligibilityInput(e.target.value)}
-                  placeholder="Add eligibility criteria"
+                  id="name"
+                  value={newScholarship.name || ""}
+                  onChange={(e) =>
+                    setNewScholarship({
+                      ...newScholarship,
+                      name: e.target.value,
+                    })
+                  }
+                  placeholder="Enter scholarship name"
                 />
-                <Button type="button" onClick={handleAddEligibility}>
-                  Add
-                </Button>
               </div>
-              <div className="mt-2 flex flex-wrap gap-2">
-                {formData.eligibility.map((criteria, index) => (
-                  <div
-                    key={index}
-                    className="flex items-center bg-gray-100 rounded-full px-3 py-1"
-                  >
-                    <span className="text-sm">{criteria}</span>
-                    <button
-                      type="button"
-                      className="ml-2 text-gray-500 hover:text-gray-700"
-                      onClick={() => handleRemoveEligibility(index)}
-                    >
-                      &times;
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Status
-              </label>
-              <select
-                name="status"
-                value={formData.status}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-              >
-                <option value="draft">Draft</option>
-                <option value="active">Active</option>
-                <option value="expired">Expired</option>
-              </select>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleAddScholarship}>Add Scholarship</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Edit Scholarship Dialog */}
-      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Edit Scholarship</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Scholarship Title
-              </label>
-              <Input
-                name="title"
-                value={formData.title}
-                onChange={handleInputChange}
-                placeholder="Enter scholarship title"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Provider
-              </label>
-              <Input
-                name="provider"
-                value={formData.provider}
-                onChange={handleInputChange}
-                placeholder="Enter provider name"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Amount
-              </label>
-              <Input
-                name="amount"
-                value={formData.amount}
-                onChange={handleInputChange}
-                placeholder="e.g. $10,000"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Deadline
-              </label>
-              <Input
-                type="date"
-                name="deadline"
-                value={formData.deadline}
-                onChange={handleInputChange}
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Description
-              </label>
-              <textarea
-                name="description"
-                value={formData.description}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                rows={3}
-                placeholder="Enter scholarship description"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Eligibility Criteria
-              </label>
-              <div className="flex space-x-2">
+              <div>
+                <Label htmlFor="provider">Provider</Label>
                 <Input
-                  value={eligibilityInput}
-                  onChange={(e) => setEligibilityInput(e.target.value)}
-                  placeholder="Add eligibility criteria"
+                  id="provider"
+                  value={newScholarship.provider || ""}
+                  onChange={(e) =>
+                    setNewScholarship({
+                      ...newScholarship,
+                      provider: e.target.value,
+                    })
+                  }
+                  placeholder="Enter provider name"
                 />
-                <Button type="button" onClick={handleAddEligibility}>
-                  Add
-                </Button>
               </div>
-              <div className="mt-2 flex flex-wrap gap-2">
-                {formData.eligibility.map((criteria, index) => (
-                  <div
-                    key={index}
-                    className="flex items-center bg-gray-100 rounded-full px-3 py-1"
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="amount">Amount</Label>
+                  <Input
+                    id="amount"
+                    value={newScholarship.amount || ""}
+                    onChange={(e) =>
+                      setNewScholarship({
+                        ...newScholarship,
+                        amount: e.target.value,
+                      })
+                    }
+                    placeholder="e.g. $10,000"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="deadline">Deadline</Label>
+                  <Input
+                    id="deadline"
+                    type="date"
+                    value={newScholarship.deadline || ""}
+                    onChange={(e) =>
+                      setNewScholarship({
+                        ...newScholarship,
+                        deadline: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="type">Scholarship Type</Label>
+                  <Select
+                    value={newScholarship.type || "Merit-based"}
+                    onValueChange={(value) =>
+                      setNewScholarship({
+                        ...newScholarship,
+                        type: value as ScholarshipType,
+                      })
+                    }
                   >
-                    <span className="text-sm">{criteria}</span>
-                    <button
-                      type="button"
-                      className="ml-2 text-gray-500 hover:text-gray-700"
-                      onClick={() => handleRemoveEligibility(index)}
-                    >
-                      &times;
-                    </button>
-                  </div>
-                ))}
+                    <SelectTrigger id="type">
+                      <SelectValue placeholder="Select type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Merit-based">Merit-based</SelectItem>
+                      <SelectItem value="Need-based">Need-based</SelectItem>
+                      <SelectItem value="Research">Research</SelectItem>
+                      <SelectItem value="Sports">Sports</SelectItem>
+                      <SelectItem value="Cultural">Cultural</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="status">Status</Label>
+                  <Select
+                    value={newScholarship.status || "Open"}
+                    onValueChange={(value) =>
+                      setNewScholarship({
+                        ...newScholarship,
+                        status: value as ScholarshipStatus,
+                      })
+                    }
+                  >
+                    <SelectTrigger id="status">
+                      <SelectValue placeholder="Select status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Open">Open</SelectItem>
+                      <SelectItem value="Closing Soon">Closing Soon</SelectItem>
+                      <SelectItem value="Closed">Closed</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Status
-              </label>
-              <select
-                name="status"
-                value={formData.status}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-              >
-                <option value="draft">Draft</option>
-                <option value="active">Active</option>
-                <option value="expired">Expired</option>
-              </select>
+              <div>
+                <Label htmlFor="description">Description</Label>
+                <Textarea
+                  id="description"
+                  value={newScholarship.vision?.purpose || ""}
+                  onChange={(e) =>
+                    setNewScholarship({
+                      ...newScholarship,
+                      vision: {
+                        purpose: e.target.value,
+                        impact: newScholarship.vision?.impact || "",
+                        goals: newScholarship.vision?.goals || "",
+                      },
+                    })
+                  }
+                  placeholder="Enter scholarship description"
+                  className="min-h-[100px]"
+                />
+              </div>
             </div>
           </div>
           <DialogFooter>
             <Button
               variant="outline"
-              onClick={() => setIsEditDialogOpen(false)}
+              onClick={() => setIsAddDialogOpen(false)}
+              className="border border-gray-300 text-black"
             >
               Cancel
             </Button>
-            <Button onClick={handleEditScholarship}>Save Changes</Button>
+            <Button
+              onClick={handleAddScholarship}
+              className="bg-blue-600 text-white hover:bg-blue-700"
+            >
+              Add Scholarship
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="sm:max-w-[600px] bg-white text-black">
           <DialogHeader>
-            <DialogTitle>Delete Scholarship</DialogTitle>
+            <DialogTitle>Confirm Deletion</DialogTitle>
           </DialogHeader>
           <div className="py-4">
             <p>
-              Are you sure you want to delete "{currentScholarship?.title}"?
-              This action cannot be undone.
+              Are you sure you want to delete this scholarship? This action
+              cannot be undone.
             </p>
           </div>
           <DialogFooter>
@@ -679,4 +445,4 @@ const AdminScholarshipsPage: React.FC = () => {
   );
 };
 
-export default AdminScholarshipsPage;
+export default AdminScholarship;

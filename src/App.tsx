@@ -120,6 +120,8 @@ import { AdminGroupSessionsPage } from "./pages/admin/montorship/AdminGroupSessi
 import { AdminResourcesPage } from "./pages/admin/montorship/AdminResources";
 
 import AdminScholarshipsPage from "./pages/admin/scholarship/AdminScholarship";
+import AdminScholarshipDetails from "./pages/admin/scholarship/AdminScholarshipDetails";
+import AdminScholarshipApplicationGuides from "./pages/admin/scholarship/AdminScholarshpGuidePage";
 
 //admin insights
 
@@ -591,6 +593,30 @@ function AppContent() {
                 element={
                   <AdminLayout>
                     <AdminScholarshipsPage />
+                  </AdminLayout>
+                }
+              />
+            }
+          />
+          <Route
+            path="/admin/scholarships/:id"
+            element={
+              <PrivateRoute
+                element={
+                  <AdminLayout>
+                    <AdminScholarshipDetails />
+                  </AdminLayout>
+                }
+              />
+            }
+          />
+          <Route
+            path="/admin/scholarships/application-guide"
+            element={
+              <PrivateRoute
+                element={
+                  <AdminLayout>
+                    <AdminScholarshipApplicationGuides />
                   </AdminLayout>
                 }
               />
