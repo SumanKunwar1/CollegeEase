@@ -1,30 +1,44 @@
-import { Request, Response, NextFunction } from 'express';
-import collegeDetailsService from '../services/collegeDetails.service';
+import { Request, Response } from 'express';
+import CollegeDetails from '../models/collegedetails.model';
 import { asyncHandler } from '../utils/asyncHandler';
 import { ApiResponse } from '../utils/apiResponse';
+import { ApiError } from '../utils/apiError';
 
-const getCollegeDetails = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+const getCollegeDetails = asyncHandler(async (req: Request, res: Response) => {
   const { organizationName } = req.params;
-  const college = await collegeDetailsService.getCollegeDetails(organizationName);
+  const decodedName = decodeURIComponent(organizationName);
+  
+  const college = await CollegeDetails.findOne({ 
+    organizationName: { $regex: new RegExp(`^${decodedName}$`, 'i') }
+  });
+
+  if (!college) {
+    throw new ApiError(404, 'College details not found');
+  }
+
   res.status(200).json(new ApiResponse(200, college));
 });
 
-const updateCollegeDetails = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+const createOrUpdateCollegeDetails = asyncHandler(async (req: Request, res: Response) => {
   const { organizationName } = req.params;
-  const college = await collegeDetailsService.createOrUpdateCollegeDetails(organizationName, req.body);
+  const decodedName = decodeURIComponent(organizationName);
+  const data = req.body;
+
+  let college = await CollegeDetails.findOne({ 
+    organizationName: { $regex: new RegExp(`^${decodedName}$`, 'i') }
+  });
+
+  if (!college) {
+    college = new CollegeDetails({
+      organizationName: decodedName,
+      ...data
+    });
+  } else {
+    Object.assign(college, data);
+  }
+
+  await college.save();
   res.status(200).json(new ApiResponse(200, college, 'College details updated successfully'));
 });
 
-const updatePrograms = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
-  const { organizationName } = req.params;
-  const college = await collegeDetailsService.updatePrograms(organizationName, req.body.programs);
-  res.status(200).json(new ApiResponse(200, college, 'Programs updated successfully'));
-});
-
-const addReview = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
-  const { organizationName } = req.params;
-  const college = await collegeDetailsService.addReview(organizationName, req.body);
-  res.status(201).json(new ApiResponse(201, college, 'Review added successfully'));
-});
-
-export { getCollegeDetails, updateCollegeDetails, updatePrograms, addReview };
+export { getCollegeDetails, createOrUpdateCollegeDetails };

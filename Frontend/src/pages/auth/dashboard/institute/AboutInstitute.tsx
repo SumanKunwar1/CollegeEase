@@ -1,5 +1,4 @@
-// AboutInstitute.tsx
-"use client"
+"use client";
 
 import { useParams, useNavigate } from "react-router-dom";
 import {
@@ -18,7 +17,6 @@ import {
   Pencil,
   Trash2,
   Save,
-  X,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Button } from "../../../../components/ui/button";
@@ -47,14 +45,14 @@ import {
 } from "../../../../components/ui/alert-dialog";
 import { toast } from "react-hot-toast";
 
-// API Configuration - Make sure this matches your backend URL
+// API Configuration
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4001/api/v1';
 
 // Type Definitions
 type Program = {
   _id?: string;
   name: string;
-  type: "undergraduate" | "postgraduate" | "doctorate";
+  level: "undergraduate" | "postgraduate" | "doctorate";
   duration: string;
   description: string;
 };
@@ -88,14 +86,13 @@ type Deadlines = {
 type CareerStats = {
   placementRate: string;
   averageSalary: string;
-  topEmployers?: string[];
 };
 
 type CollegeType = {
   organizationName: string;
   name: string;
   description: string;
-  coverImageUrl: string;
+  imageUrl: string;
   location: string;
   rating: number;
   foundedYear: string;
@@ -117,9 +114,9 @@ type ApiResponse<T> = {
 // Empty college template
 const emptyCollege: CollegeType = {
   organizationName: '',
-  name: 'New College',
+  name: '',
   description: '',
-  coverImageUrl: '',
+  imageUrl: '',
   location: '',
   rating: 0,
   foundedYear: new Date().getFullYear().toString(),
@@ -143,13 +140,12 @@ const emptyCollege: CollegeType = {
   },
   careerStats: {
     placementRate: '',
-    averageSalary: '',
-    topEmployers: []
+    averageSalary: ''
   }
 };
 
 const AboutInstitute = () => {
-  const { id } = useParams<{ id: string }>();
+  const { organizationName: orgNameParam } = useParams<{ organizationName: string }>();
   const navigate = useNavigate();
   const [college, setCollege] = useState<CollegeType | null>(null);
   const [programs, setPrograms] = useState<Programs>(emptyCollege.programs);
@@ -157,25 +153,43 @@ const AboutInstitute = () => {
   const [coverImage, setCoverImage] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [editableData, setEditableData] = useState<Partial<CollegeType>>({});
-  const [newEmployer, setNewEmployer] = useState('');
+
+  const formatOrganizationName = (name: string) => {
+    return name ? decodeURIComponent(name).replace(/%20/g, ' ') : '';
+  };
 
   const fetchCollegeDetails = async () => {
     try {
       setLoading(true);
-      const organizationName = id?.toLowerCase().replace(/\s+/g, '-') || '';
+      const formattedOrgName = formatOrganizationName(orgNameParam || '');
       
-      const response = await fetch(`${API_BASE_URL}/college-details/${organizationName}`);
+      if (!formattedOrgName) {
+        throw new Error('Organization name is required');
+      }
+
+      // First try to fetch college details
+      const response = await fetch(`${API_BASE_URL}/college-details/${encodeURIComponent(formattedOrgName)}`);
       
       if (response.status === 404) {
-        setCollege({
+        // College not found, create new with basic info
+        const newCollege = {
           ...emptyCollege,
-          organizationName: organizationName,
-          name: id || 'New College'
+          organizationName: formattedOrgName,
+          name: formattedOrgName,
+          location: ''
+        };
+        setCollege(newCollege);
+        setEditableData({
+          name: formattedOrgName,
+          location: ''
         });
         return;
       }
 
-      if (!response.ok) throw new Error('Failed to fetch college details');
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to fetch college details');
+      }
       
       const data: ApiResponse<CollegeType> = await response.json();
       
@@ -186,6 +200,7 @@ const AboutInstitute = () => {
       setCollege(data.data);
       setPrograms(data.data.programs || emptyCollege.programs);
       setEditableData({
+        name: data.data.name,
         description: data.data.description,
         location: data.data.location,
         foundedYear: data.data.foundedYear,
@@ -197,10 +212,11 @@ const AboutInstitute = () => {
       });
     } catch (error) {
       console.error("Error fetching college details:", error);
+      toast.error("Failed to load college details");
       setCollege({
         ...emptyCollege,
-        organizationName: id?.toLowerCase().replace(/\s+/g, '-') || '',
-        name: id || 'New College'
+        organizationName: formatOrganizationName(orgNameParam || ''),
+        name: formatOrganizationName(orgNameParam || '')
       });
     } finally {
       setLoading(false);
@@ -209,7 +225,7 @@ const AboutInstitute = () => {
 
   useEffect(() => {
     fetchCollegeDetails();
-  }, [id]);
+  }, [orgNameParam]);
 
   const handleCoverImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -252,34 +268,6 @@ const AboutInstitute = () => {
     setHasChanges(true);
   };
 
-  const handleAddEmployer = () => {
-    if (!newEmployer.trim()) return;
-    
-    const updatedEmployers = [
-      ...(editableData.careerStats?.topEmployers || college?.careerStats.topEmployers || []),
-      newEmployer
-    ];
-    
-    handleInputChange('careerStats', {
-      ...editableData.careerStats,
-      topEmployers: updatedEmployers
-    });
-    
-    setNewEmployer('');
-  };
-
-  const handleRemoveEmployer = (index: number) => {
-    const updatedEmployers = [
-      ...(editableData.careerStats?.topEmployers || college?.careerStats.topEmployers || [])
-    ];
-    updatedEmployers.splice(index, 1);
-    
-    handleInputChange('careerStats', {
-      ...editableData.careerStats,
-      topEmployers: updatedEmployers
-    });
-  };
-
   const handleDeadlineChange = (term: keyof Deadlines, value: string) => {
     handleInputChange('applicationDeadlines', {
       ...(editableData.applicationDeadlines || college?.applicationDeadlines || emptyCollege.applicationDeadlines),
@@ -289,30 +277,45 @@ const AboutInstitute = () => {
 
   const handleSaveChanges = async () => {
     try {
-      if (!college) return;
+      if (!college || !orgNameParam) {
+        toast.error("College information is incomplete");
+        return;
+      }
       
-      const organizationName = id?.toLowerCase().replace(/\s+/g, '-') || '';
+      const formattedOrgName = formatOrganizationName(orgNameParam);
       
+      if (!formattedOrgName) {
+        toast.error("Organization name is required");
+        return;
+      }
+
       const updatedCollege = {
         ...college,
         ...editableData,
         programs,
-        coverImageUrl: coverImage || college.coverImageUrl
+        imageUrl: coverImage || college.imageUrl,
+        organizationName: formattedOrgName
       };
 
-      const response = await fetch(`${API_BASE_URL}/college-details/${organizationName}`, {
+      console.log("Saving college:", updatedCollege); // Debug log
+
+      const response = await fetch(`${API_BASE_URL}/college-details/${encodeURIComponent(formattedOrgName)}`, {
         method: 'PUT',
         headers: { 
           'Content-Type': 'application/json',
-          // Add authorization header if needed
-          // 'Authorization': `Bearer ${yourToken}`
         },
         body: JSON.stringify(updatedCollege)
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to save changes');
+        let errorMessage = 'Failed to save changes';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorMessage;
+        } catch (e) {
+          errorMessage = response.statusText || errorMessage;
+        }
+        throw new Error(errorMessage);
       }
 
       const updatedData: ApiResponse<CollegeType> = await response.json();
@@ -338,7 +341,7 @@ const AboutInstitute = () => {
     const [formData, setFormData] = useState<Program>(
       program || {
         name: "",
-        type: level,
+        level: level,
         duration: "",
         description: "",
       },
@@ -409,14 +412,18 @@ const AboutInstitute = () => {
         <div
           className="absolute inset-0 bg-center bg-cover transform scale-110"
           style={{
-            backgroundImage: `url(${coverImage || college.coverImageUrl})`,
+            backgroundImage: `url(${coverImage || college.imageUrl})`,
             transform: "translateZ(0)",
           }}
         />
         <div className="absolute inset-0 bg-gradient-to-b from-black/40 to-black/40">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-end">
             <div className="pb-20 text-white">
-              <h1 className="text-5xl font-bold mb-4">{college.name}</h1>
+              <Input
+                value={editableData.name || college.name}
+                onChange={(e) => handleInputChange('name', e.target.value)}
+                className="text-5xl font-bold mb-4 bg-transparent border-none text-white p-0 focus-visible:ring-0 focus-visible:ring-offset-0"
+              />
               <div className="flex items-center space-x-6 text-lg">
                 <div className="flex items-center">
                   <MapPin className="h-6 w-6 mr-2" />
@@ -704,39 +711,8 @@ const AboutInstitute = () => {
                       className="w-32 text-right border-none p-0 focus-visible:ring-0"
                     />
                   </div>
-                  <div className="mt-4">
-                    <h4 className="text-sm font-medium text-gray-500 mb-2">Top Employers</h4>
-                    <div className="flex flex-wrap gap-2 mb-3">
-                      {(editableData.careerStats?.topEmployers || college.careerStats.topEmployers || []).map((employer, index) => (
-                        <span key={index} className="bg-gray-100 text-gray-800 text-xs px-3 py-1 rounded-full flex items-center">
-                          {employer}
-                          <button 
-                            onClick={() => handleRemoveEmployer(index)}
-                            className="ml-1 text-gray-500 hover:text-red-500"
-                          >
-                            <X className="h-3 w-3" />
-                          </button>
-                        </span>
-                      ))}
-                    </div>
-                    <div className="flex gap-2">
-                      <Input
-                        value={newEmployer}
-                        onChange={(e) => setNewEmployer(e.target.value)}
-                        placeholder="Add new employer"
-                        className="flex-1"
-                      />
-                      <Button 
-                        onClick={handleAddEmployer}
-                        size="sm"
-                        variant="outline"
-                      >
-                        Add
-                      </Button>
-                    </div>
-                  </div>
                   <Button
-                    onClick={() => navigate(`/colleges/${id}/apply`)}
+                    onClick={() => navigate(`/colleges/${orgNameParam}/apply`)}
                     className="w-full bg-blue-600 hover:bg-blue-700 text-lg py-6 mb-6"
                   >
                     Apply Now
@@ -814,9 +790,9 @@ const AboutInstitute = () => {
 
         {/* Save button at bottom center */}
         {hasChanges && (
-          <div className="fixed bottom-8 left-0 right-0 flex justify-center">
+          <div className="fixed bottom-8 left-0 right-0 flex justify-center z-50">
             <Button 
-              onClick={handleSaveChanges} 
+              onClick={handleSaveChanges}
               className="px-8 py-6 text-lg shadow-lg"
               size="lg"
             >

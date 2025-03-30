@@ -45,8 +45,7 @@ app.use('/api/v1/college-details', collegeDetailsRouter);
 
 
 // Corrected route - ensure this matches exactly what frontend expects
-app.use('/api/v1/college/details', detailsRouter);
-
+app.use('/api/v1/college-details', collegeDetailsRouter);
 // Error handling
 app.use(errorHandler);
 

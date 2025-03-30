@@ -1,20 +1,12 @@
-// collegeDetails.routes.ts
 import express from 'express';
 import {
   getCollegeDetails,
-  updateCollegeDetails,
-  updatePrograms,
-  addReview,
+  createOrUpdateCollegeDetails,
 } from '../controllers/collegeDetails.controller';
 
 const router = express.Router();
 
-// Public routes
-router.get('/college-details/:organizationName', getCollegeDetails);
-
-// Protected routes (for college admins)
-router.put('/college-details/:organizationName', updateCollegeDetails);
-router.put('/college-details/:organizationName/programs', updatePrograms);
-router.post('/college-details/:organizationName/reviews', addReview);
+router.get('/:organizationName', getCollegeDetails);
+router.put('/:organizationName', createOrUpdateCollegeDetails);
 
 export default router;
