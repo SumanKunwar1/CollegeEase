@@ -1,3 +1,5 @@
+"use client";
+
 import { useParams, useNavigate } from "react-router-dom";
 import {
   Star,
@@ -16,10 +18,14 @@ import { Button } from "../../components/ui/button";
 import { useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
 
+// API Configuration
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4001/api/v1';
+
+// Type Definitions
 type Program = {
   _id?: string;
   name: string;
-  type: "undergraduate" | "postgraduate" | "doctorate";
+  level: "undergraduate" | "postgraduate" | "doctorate";
   duration: string;
   description: string;
 };
@@ -60,7 +66,7 @@ type CollegeType = {
   organizationName: string;
   name: string;
   description: string;
-  coverImageUrl: string;
+  imageUrl: string;
   location: string;
   rating: number;
   foundedYear: string;
@@ -73,24 +79,44 @@ type CollegeType = {
   careerStats: CareerStats;
 };
 
+type ApiResponse<T> = {
+  success: boolean;
+  message: string;
+  data: T;
+};
+
 const CollegeDetails = () => {
-  const { name } = useParams();
+  const { name } = useParams<{ name: string }>();
   const navigate = useNavigate();
   const [college, setCollege] = useState<CollegeType | null>(null);
   const [loading, setLoading] = useState(true);
+
+  const formatOrganizationName = (name: string) => {
+    return name ? decodeURIComponent(name).replace(/%20/g, ' ') : '';
+  };
 
   useEffect(() => {
     const fetchCollegeDetails = async () => {
       try {
         setLoading(true);
-        const organizationName = name?.toLowerCase().replace(/\s+/g, '-') || '';
-        const response = await fetch(`/api/v1/college-details/${organizationName}`);
+        const formattedOrgName = formatOrganizationName(name || '');
+        
+        if (!formattedOrgName) {
+          throw new Error('College name is required');
+        }
+
+        const response = await fetch(`${API_BASE_URL}/college-details/${encodeURIComponent(formattedOrgName)}`);
         
         if (!response.ok) {
           throw new Error('College not found');
         }
         
-        const data = await response.json();
+        const data: ApiResponse<CollegeType> = await response.json();
+        
+        if (!data.success || !data.data) {
+          throw new Error(data.message || 'Invalid data format');
+        }
+
         setCollege(data.data);
       } catch (error) {
         console.error("Error fetching college details:", error);
@@ -112,7 +138,7 @@ const CollegeDetails = () => {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-900">Loading...</h2>
+          <h2 className="text-2xl font-bold text-gray-900">Loading College Details...</h2>
         </div>
       </div>
     );
@@ -122,9 +148,7 @@ const CollegeDetails = () => {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-900">
-            College not found
-          </h2>
+          <h2 className="text-2xl font-bold text-gray-900">College Not Found</h2>
           <Button onClick={() => navigate("/colleges")} className="mt-4">
             Back to Colleges
           </Button>
@@ -164,7 +188,7 @@ const CollegeDetails = () => {
         <div
           className="absolute inset-0 bg-center bg-cover transform scale-110"
           style={{
-            backgroundImage: `url(${college.coverImageUrl})`,
+            backgroundImage: `url(${college.imageUrl})`,
             transform: "translateZ(0)",
           }}
         />
@@ -240,32 +264,42 @@ const CollegeDetails = () => {
                   Academic Programs
                 </h2>
                 <div className="space-y-8">
-                  {Object.entries(college.programs).map(([level, programs]) => (
-                    <div key={level}>
-                      <h3 className="text-xl font-semibold text-gray-900 mb-4 capitalize">
-                        {level} Programs
-                      </h3>
-                      <div className="grid gap-4">
-                        {programs?.map((program) => (
-                          <div
-                            key={program._id || program.name}
-                            className="bg-gray-50 rounded-xl p-6 hover:shadow-md transition-shadow"
-                          >
-                            <h4 className="text-lg font-semibold text-gray-900">
-                              {program.name}
-                            </h4>
-                            <p className="text-gray-600 mt-2">
-                              {program.description}
-                            </p>
-                            <div className="flex items-center mt-4 text-sm text-gray-500">
-                              <Clock className="h-4 w-4 mr-2" />
-                              Duration: {program.duration}
-                            </div>
+                  {(['undergraduate', 'postgraduate', 'doctorate'] as ProgramLevel[]).map((level) => {
+                    const programsList = college.programs[level] || [];
+                    return (
+                      <div key={level}>
+                        <h3 className="text-xl font-semibold text-gray-900 mb-4 capitalize">
+                          {level} Programs
+                        </h3>
+                        {programsList.length > 0 ? (
+                          <div className="grid gap-4">
+                            {programsList.map((program) => (
+                              <div
+                                key={program._id || program.name}
+                                className="bg-gray-50 rounded-xl p-6 hover:shadow-md transition-shadow"
+                              >
+                                <h4 className="text-lg font-semibold text-gray-900">
+                                  {program.name}
+                                </h4>
+                                <p className="text-gray-600 mt-2">
+                                  {program.description}
+                                </p>
+                                <div className="flex items-center mt-4 text-sm text-gray-500">
+                                  <Clock className="h-4 w-4 mr-2" />
+                                  Duration: {program.duration}
+                                </div>
+                              </div>
+                            ))}
                           </div>
-                        ))}
+                        ) : (
+                          <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 bg-gray-50 flex flex-col items-center justify-center">
+                            <GraduationCap className="h-12 w-12 text-gray-400 mb-3" />
+                            <p className="text-gray-500 text-center mb-2">No {level} programs available</p>
+                          </div>
+                        )}
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             </section>
@@ -277,30 +311,36 @@ const CollegeDetails = () => {
                   <Star className="h-8 w-8 mr-3 text-blue-600" />
                   Student Reviews
                 </h2>
-                <div className="space-y-6">
-                  {college.studentReviews.map((review) => (
-                    <div
-                      key={review.id}
-                      className="bg-gray-50 rounded-xl p-6 hover:shadow-md transition-shadow"
-                    >
-                      <div className="flex items-center justify-between mb-4">
-                        <div>
-                          <p className="font-semibold text-gray-900 text-lg">
-                            {review.studentName}
-                          </p>
-                          <p className="text-blue-600">{review.program}</p>
+                {college.studentReviews.length > 0 ? (
+                  <div className="space-y-6">
+                    {college.studentReviews.map((review) => (
+                      <div
+                        key={review.id}
+                        className="bg-gray-50 rounded-xl p-6 hover:shadow-md transition-shadow"
+                      >
+                        <div className="flex items-center justify-between mb-4">
+                          <div>
+                            <p className="font-semibold text-gray-900 text-lg">
+                              {review.studentName}
+                            </p>
+                            <p className="text-blue-600">{review.program}</p>
+                          </div>
+                          <div className="flex items-center bg-white px-3 py-1 rounded-full">
+                            <Star className="h-5 w-5 text-yellow-400 fill-current" />
+                            <span className="ml-1 font-medium">
+                              {review.rating}
+                            </span>
+                          </div>
                         </div>
-                        <div className="flex items-center bg-white px-3 py-1 rounded-full">
-                          <Star className="h-5 w-5 text-yellow-400 fill-current" />
-                          <span className="ml-1 font-medium">
-                            {review.rating}
-                          </span>
-                        </div>
+                        <p className="text-gray-600">{review.review}</p>
                       </div>
-                      <p className="text-gray-600">{review.review}</p>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <p className="text-gray-500">No student reviews yet</p>
+                  </div>
+                )}
               </div>
             </section>
           </div>
@@ -310,6 +350,7 @@ const CollegeDetails = () => {
             {/* Quick Actions Card */}
             <div className="sticky top-24">
               <div className="bg-white rounded-2xl shadow-xl p-8 mb-8">
+                <h3 className="text-xl font-bold text-gray-900 mb-6">Key Statistics</h3>
                 <div className="space-y-6">
                   <div className="flex items-center justify-between">
                     <span className="text-gray-600">Placement Rate</span>
@@ -323,7 +364,7 @@ const CollegeDetails = () => {
                       {college.careerStats.averageSalary}
                     </span>
                   </div>
-                  {college.careerStats.topEmployers && (
+                  {college.careerStats.topEmployers && college.careerStats.topEmployers.length > 0 && (
                     <div className="mt-4">
                       <h4 className="text-sm font-medium text-gray-500 mb-2">Top Employers</h4>
                       <div className="flex flex-wrap gap-2">
@@ -354,20 +395,20 @@ const CollegeDetails = () => {
                   Application Deadlines
                 </h3>
                 <div className="space-y-4">
-                  {Object.entries(college.applicationDeadlines).map(
-                    ([term, date]) => (
-                      <div
-                        key={term}
-                        className="flex items-center justify-between p-4 bg-gray-50 rounded-xl"
-                      >
-                        <div className="flex items-center">
-                          <Calendar className="h-5 w-5 text-blue-600 mr-3" />
-                          <span className="capitalize">{term} Intake</span>
-                        </div>
-                        <span className="font-medium">{date}</span>
+                  {(['fall', 'spring', 'summer'] as (keyof Deadlines)[]).map((term) => (
+                    <div
+                      key={term}
+                      className="flex items-center justify-between p-4 bg-gray-50 rounded-xl"
+                    >
+                      <div className="flex items-center">
+                        <Calendar className="h-5 w-5 text-blue-600 mr-3" />
+                        <span className="capitalize">{term} Intake</span>
                       </div>
-                    )
-                  )}
+                      <span className="font-medium">
+                        {college.applicationDeadlines[term] || 'Not specified'}
+                      </span>
+                    </div>
+                  ))}
                 </div>
               </div>
 
@@ -385,10 +426,12 @@ const CollegeDetails = () => {
                           {fee.level}
                         </span>
                         <span className="font-semibold text-gray-900">
-                          {fee.range}
+                          {fee.range || 'Not specified'}
                         </span>
                       </div>
-                      <p className="text-sm text-gray-500">{fee.notes}</p>
+                      {fee.notes && (
+                        <p className="text-sm text-gray-500">{fee.notes}</p>
+                      )}
                     </div>
                   ))}
                 </div>

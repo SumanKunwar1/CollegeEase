@@ -21,11 +21,10 @@ const CollegesPage = () => {
   useEffect(() => {
     const fetchColleges = async () => {
       try {
-// In CollegesPage.tsx, change the fetch URL to:
-const response = await axios.get("http://localhost:4001/api/v1/admin/colleges");        
+        const response = await axios.get("http://localhost:4001/api/v1/admin/colleges");        
         // Transform backend data to match frontend College type
         const transformedColleges = response.data.data.map((college: any) => ({
-          id: college._id,  // Map _id to id
+          id: college._id,
           organizationName: college.organizationName,
           location: college.location,
           rating: college.rating || 0,
@@ -95,43 +94,10 @@ const response = await axios.get("http://localhost:4001/api/v1/admin/colleges");
     });
   };
 
-  const handleViewDetails = async (organizationName: string) => {
-    try {
-      const response = await axios.get(
-        `http://localhost:4001/api/v1/colleges/${encodeURIComponent(organizationName)}`
-      );
-      
-      // Transform the college data before passing it
-      const collegeData = response.data.data;
-      const transformedCollege = {
-        id: collegeData._id,
-        organizationName: collegeData.organizationName,
-        location: collegeData.location,
-        rating: collegeData.rating || 0,
-        tuitionRange: collegeData.tuitionRange || "",
-        acceptanceRate: collegeData.acceptanceRate || "",
-        studentPopulation: collegeData.studentPopulation || "",
-        imageUrl: collegeData.imageUrl || "/Assets/images/default-college.jpg",
-        courses: collegeData.courses || [],
-        rankings: {
-          academic: collegeData.rankings?.academic || 0,
-          studentSatisfaction: collegeData.rankings?.studentSatisfaction || 0,
-          placement: collegeData.rankings?.placement || 0,
-        },
-        programs: collegeData.programs || {},
-        virtualTours: collegeData.virtualTours || []
-      };
-
-      navigate(`/colleges/${encodeURIComponent(organizationName)}`, {
-        state: { college: transformedCollege }
-      });
-    } catch (err) {
-      console.error("Error fetching college details:", err);
-      const errorMessage = err instanceof AxiosError 
-        ? err.response?.data?.message || err.message
-        : "Failed to fetch college details";
-      alert(errorMessage);
-    }
+  const handleViewDetails = (organizationName: string) => {
+    // Navigate directly to the college details page using the organizationName
+    // The CollegeDetails component will fetch the data when it loads
+    navigate(`/colleges/${encodeURIComponent(organizationName)}`);
   };
 
   if (loading) {

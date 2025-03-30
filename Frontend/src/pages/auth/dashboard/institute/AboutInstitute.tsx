@@ -150,7 +150,7 @@ const AboutInstitute = () => {
   const [college, setCollege] = useState<CollegeType | null>(null);
   const [programs, setPrograms] = useState<Programs>(emptyCollege.programs);
   const [hasChanges, setHasChanges] = useState(false);
-  const [coverImage, setCoverImage] = useState<string | null>(null);
+  const [coverImageUrl, setCoverImageUrl] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [editableData, setEditableData] = useState<Partial<CollegeType>>({});
 
@@ -198,6 +198,7 @@ const AboutInstitute = () => {
       }
 
       setCollege(data.data);
+      setCoverImageUrl(data.data.imageUrl || '');
       setPrograms(data.data.programs || emptyCollege.programs);
       setEditableData({
         name: data.data.name,
@@ -227,13 +228,9 @@ const AboutInstitute = () => {
     fetchCollegeDetails();
   }, [orgNameParam]);
 
-  const handleCoverImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const imageUrl = URL.createObjectURL(file);
-      setCoverImage(imageUrl);
-      setHasChanges(true);
-    }
+  const handleImageUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setCoverImageUrl(e.target.value);
+    setHasChanges(true);
   };
 
   const handleInputChange = (field: keyof CollegeType, value: any) => {
@@ -293,7 +290,7 @@ const AboutInstitute = () => {
         ...college,
         ...editableData,
         programs,
-        imageUrl: coverImage || college.imageUrl,
+        imageUrl: coverImageUrl || college.imageUrl,
         organizationName: formattedOrgName
       };
 
@@ -412,7 +409,7 @@ const AboutInstitute = () => {
         <div
           className="absolute inset-0 bg-center bg-cover transform scale-110"
           style={{
-            backgroundImage: `url(${coverImage || college.imageUrl})`,
+            backgroundImage: `url(${coverImageUrl || college.imageUrl})`,
             transform: "translateZ(0)",
           }}
         />
@@ -450,15 +447,16 @@ const AboutInstitute = () => {
           </div>
         </div>
         <div className="absolute top-4 right-4 flex flex-col items-end">
-          <Label htmlFor="coverImage" className="text-white mb-1">
-            Upload Cover Image
+          <Label htmlFor="coverImageUrl" className="text-white mb-1">
+            Image URL
           </Label>
           <Input 
-            type="file" 
-            id="coverImage" 
-            onChange={handleCoverImageChange} 
+            type="text" 
+            id="coverImageUrl" 
+            value={coverImageUrl}
+            onChange={handleImageUrlChange}
             className="bg-white" 
-            accept="image/*"
+            placeholder="Enter image URL"
           />
         </div>
       </div>
