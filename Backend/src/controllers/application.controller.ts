@@ -11,12 +11,14 @@ const submitApplication = asyncHandler(async (req: Request, res: Response) => {
   const { collegeName } = req.params;
   
   // Parse the form data
-  const formData = JSON.parse(req.body.data);
-  const files = req.files as Express.Multer.File[];
-  
-  if (!files || Object.keys(files).length === 0) {
-    throw new ApiError(400, 'No documents uploaded');
+  let formData;
+  try {
+    formData = JSON.parse(req.body.data);
+  } catch (error) {
+    throw new ApiError(400, 'Invalid form data format');
   }
+
+  const files = req.files as Express.Multer.File[];
   
   // Process files into documents array
   const documents: Array<{
@@ -24,25 +26,50 @@ const submitApplication = asyncHandler(async (req: Request, res: Response) => {
     fileName: string;
     filePath: string;
   }> = [];
-  
-  Object.entries(files).forEach(([fieldName, fileArray]) => {
-    if (Array.isArray(fileArray)) {
-      fileArray.forEach(file => {
-        documents.push({
-          type: fieldName,
-          fileName: file.originalname,
-          filePath: file.path
-        });
+
+  if (files && files.length > 0) {
+    files.forEach(file => {
+      // Extract the document type from the fieldname
+      const type = file.fieldname;
+      documents.push({
+        type,
+        fileName: file.originalname,
+        filePath: file.path
       });
-    }
-  });
-  
+    });
+  }
+
+  // Create application with all form data
   const application = await Application.create({
     collegeName,
-    ...formData,
+    studentName: formData.studentName,
+    email: formData.email,
+    phone: formData.phone,
+    program: formData.program,
+    level: formData.level,
+    intake: formData.intake,
+    status: 'pending',
+    // Personal Info
+    firstName: formData.firstName,
+    lastName: formData.lastName,
+    dob: formData.dob,
+    nationality: formData.nationality,
+    // Test Scores
+    testType: formData.testType,
+    testScore: formData.testScore,
+    testDate: formData.testDate,
+    // Additional Info
+    projects: formData.projects,
+    publications: formData.publications,
+    researchExperience: formData.researchExperience,
+    workExperience: formData.workExperience,
+    statementOfPurpose: formData.statementOfPurpose,
+    // Education History
+    previousEducation: formData.previousEducation,
+    // Documents
     documents
   });
-  
+
   res.status(201).json(new ApiResponse(201, application, 'Application submitted successfully'));
 });
 
