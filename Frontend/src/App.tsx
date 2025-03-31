@@ -171,7 +171,7 @@ function AppContent() {
             path="/colleges/application-guides"
             element={<ApplicationGuides />}
           />
-          <Route path="/colleges/:id/apply" element={<ApplicationForm />} />
+          <Route path="/colleges/:name/apply" element={<ApplicationForm />} />
           <Route path="/colleges/:name" element={<CollegeDetails />} />
           <Route path="/scholarships" element={<ScholarshipsPage />} />
           <Route

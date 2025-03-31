@@ -63,10 +63,10 @@ const CollegeRankings = () => {
             <Trophy className="h-8 w-8 text-yellow-400 mb-4" />
             <img
               src={college.imageUrl}
-              alt={college.name}
+              alt={college.organizationName}
               className="w-full h-32 object-cover rounded-md mb-4"
             />
-            <h3 className="text-xl font-semibold mb-2">{college.name}</h3>
+            <h3 className="text-xl font-semibold mb-2">{college.organizationName}</h3>
             <p className="text-gray-600 mb-4">{college.location}</p>
             <div className="space-y-2">
               <div className="flex items-center justify-between">
@@ -126,7 +126,7 @@ const CollegeRankings = () => {
                     {index + 1}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {college.name}
+                    {college.organizationName}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {college.location}

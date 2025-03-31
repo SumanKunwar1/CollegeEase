@@ -1,4 +1,3 @@
-// app.ts
 import express from 'express';
 import morgan from 'morgan';
 import cors from 'cors';
@@ -12,6 +11,8 @@ import adminRouter from './routes/admin.signin.route';
 import collegeRouter from './routes/admin/college.routes';
 import detailsRouter from './routes/college/details.routes';
 import collegeDetailsRouter from './routes/collegeDetails.routes';
+import applicationRouter from './routes/application.routes';
+
 
 
 dotenv.config();
@@ -42,10 +43,9 @@ app.use('/api/v1/auth', authRouter);
 app.use('/api/v1/admin', adminRouter);
 app.use('/api/v1/admin/colleges', collegeRouter);
 app.use('/api/v1/college-details', collegeDetailsRouter);
-
-
-// Corrected route - ensure this matches exactly what frontend expects
 app.use('/api/v1/college-details', collegeDetailsRouter);
+app.use('/api/v1/applications', applicationRouter);
+
 // Error handling
 app.use(errorHandler);
 
