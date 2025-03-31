@@ -159,9 +159,7 @@ const ApplicationForm = () => {
     register,
     handleSubmit,
     formState: { errors },
-    watch,
     setValue,
-    control
   } = useForm<FormData>({
     resolver: zodResolver(applicationSchema),
     defaultValues: {
@@ -285,7 +283,7 @@ const ApplicationForm = () => {
       
       // Append files
       Object.entries(files).forEach(([type, fileList]) => {
-        fileList.forEach((file, index) => {
+        fileList.forEach((file, ) => {
           formData.append(type, file);
         });
       });
