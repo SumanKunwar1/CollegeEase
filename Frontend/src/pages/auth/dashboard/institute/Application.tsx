@@ -55,6 +55,15 @@ export function Applications() {
   const [applications, setApplications] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Error type guards
+  const isApiError = (error: unknown): error is { response: { data: { message: string } } } => {
+    return typeof error === 'object' && error !== null && 'response' in error;
+  };
+
+  const isErrorWithMessage = (error: unknown): error is { message: string } => {
+    return typeof error === 'object' && error !== null && 'message' in error;
+  };
+
   useEffect(() => {
     const fetchApplications = async () => {
       try {
@@ -77,8 +86,13 @@ export function Applications() {
           throw new Error('Invalid response format');
         }
       } catch (error) {
+        const message = isApiError(error) 
+          ? error.response.data.message
+          : isErrorWithMessage(error)
+          ? error.message
+          : 'Failed to fetch applications';
+        toast.error(message);
         console.error('Error fetching applications:', error);
-        toast.error('Failed to load applications');
       } finally {
         setLoading(false);
       }
@@ -180,7 +194,6 @@ export function Applications() {
   ];
 
   const handleViewDetails = (application: Application) => {
-    // Here you can show a modal with all details
     toast.success(`Viewing details for: ${application.studentName}`);
     console.log("Application details:", application);
   };
@@ -211,36 +224,44 @@ export function Applications() {
         throw new Error(response.data.message || 'Failed to update status');
       }
     } catch (error) {
+      const message = isApiError(error)
+        ? error.response.data.message
+        : isErrorWithMessage(error)
+        ? error.message
+        : 'Failed to update application status';
+      toast.error(message);
       console.error('Error updating application status:', error);
-      toast.error('Failed to update application status');
     }
   };
 
   const handleDownloadDocuments = async (application: Application) => {
     try {
       const token = localStorage.getItem('token');
-      if (!token) {
-        throw new Error('No authentication token found');
-      }
+      if (!token) throw new Error('Authentication required');
 
-      // Download documents as zip
-      const response = await axios.get(`${API_BASE_URL}/applications/${application._id}/download`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        responseType: 'blob',
-      });
+      // Download documents
+      const response = await axios.get(
+        `${API_BASE_URL}/applications/${application._id}/download`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+          responseType: 'blob'
+        }
+      );
 
+      // Create download link
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', `${application.studentName}_documents.zip`);
+      link.setAttribute(
+        'download',
+        `${application.studentName}_${application.program}_documents.zip`
+      );
       document.body.appendChild(link);
       link.click();
-      link.remove();
+      link.parentNode?.removeChild(link);
 
-      // Export form data as Excel
-      const formData = {
+      // Export data to Excel
+      const excelData = {
         'Student Name': application.studentName,
         'Email': application.email,
         'Phone': application.phone,
@@ -262,12 +283,17 @@ export function Applications() {
         'Statement of Purpose': application.statementOfPurpose,
       };
 
-      exportToExcel([formData], `${application.studentName}_application_data`);
-      
-      toast.success('Documents and form data downloaded successfully');
+      exportToExcel([excelData], `${application.studentName}_application_data`);
+
+      toast.success('Documents and application data downloaded successfully');
     } catch (error) {
-      console.error('Error downloading documents:', error);
-      toast.error('Failed to download documents');
+      const message = isApiError(error)
+        ? error.response.data.message
+        : isErrorWithMessage(error)
+        ? error.message
+        : 'Failed to download documents';
+      toast.error(message);
+      console.error('Download error:', error);
     }
   };
 
@@ -283,7 +309,6 @@ export function Applications() {
       return;
     }
 
-    // Format the data for export
     const formattedData = dataToExport.map(app => ({
       'Student Name': app.studentName,
       'Email': app.email,

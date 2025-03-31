@@ -106,23 +106,43 @@ const downloadDocuments = asyncHandler(async (req: Request, res: Response) => {
     throw new ApiError(404, 'Application not found');
   }
 
-  if (application.documents.length === 0) {
-    throw new ApiError(400, 'No documents to download');
+  if (!application.documents || application.documents.length === 0) {
+    throw new ApiError(400, 'No documents available for download');
   }
 
-  const zip = archiver('zip', { zlib: { level: 9 } });
+  const archive = archiver('zip', { zlib: { level: 9 } });
+  
+  // Set proper headers for zip file download
   res.attachment(`${application.studentName}_${application.program}_documents.zip`);
+  archive.pipe(res);
 
-  zip.pipe(res);
+  let filesAdded = false;
 
-  application.documents.forEach(doc => {
-    const filePath = path.join(__dirname, '../../', doc.filePath);
-    if (fs.existsSync(filePath)) {
-      zip.file(filePath, { name: doc.fileName });
+  // Process each document
+  for (const doc of application.documents) {
+    try {
+      // Construct absolute file path
+      const absolutePath = path.resolve(__dirname, '../../', doc.filePath);
+      
+      if (fs.existsSync(absolutePath)) {
+        // Read file as buffer and append to archive
+        const fileBuffer = fs.readFileSync(absolutePath);
+        archive.append(fileBuffer, { name: doc.fileName });
+        filesAdded = true;
+      } else {
+        console.warn(`File not found: ${absolutePath}`);
+      }
+    } catch (error) {
+      console.error(`Error processing file ${doc.fileName}:`, error);
     }
-  });
+  }
 
-  await zip.finalize();
+  if (!filesAdded) {
+    throw new ApiError(400, 'No valid documents found to download');
+  }
+
+  // Finalize the archive
+  await archive.finalize();
 });
 
 const downloadSelectedDocuments = asyncHandler(async (req: Request, res: Response) => {
