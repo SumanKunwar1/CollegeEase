@@ -13,6 +13,8 @@ import detailsRouter from './routes/college/details.routes';
 import collegeDetailsRouter from './routes/collegeDetails.routes';
 import applicationRouter from './routes/application.routes';
 import searchCompareRouter from './routes/searchCompare.routes'; 
+import virtualTourRouter from './routes/virtualTour.routes';
+
 
 
 
@@ -47,6 +49,8 @@ app.use('/api/v1/college-details', collegeDetailsRouter);
 app.use('/api/v1/college-details', collegeDetailsRouter);
 app.use('/api/v1/applications', applicationRouter);
 app.use('/api/v1/search-compare', searchCompareRouter);
+app.use('/api/v1/virtual-tours', virtualTourRouter);
+
 
 // Error handling
 app.use(errorHandler);
