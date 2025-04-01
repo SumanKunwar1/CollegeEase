@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Search, Filter } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
@@ -14,9 +14,11 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "../../components/ui/dialog";
 import type { College } from "../../types/college";
-import { colleges } from "../../data/colleges";
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 const SearchCompare = () => {
   const [selectedColleges, setSelectedColleges] = useState<College[]>([]);
@@ -24,6 +26,29 @@ const SearchCompare = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [locationFilter, setLocationFilter] = useState("all");
   const [tuitionFilter, setTuitionFilter] = useState("all");
+  const [colleges, setColleges] = useState<College[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch colleges from backend
+  useEffect(() => {
+    const fetchColleges = async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/search-compare`);
+        if (!response.ok) {
+          throw new Error("Failed to fetch colleges");
+        }
+        const data = await response.json();
+        setColleges(data);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "An unknown error occurred");
+        console.error("Error fetching colleges:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchColleges();
+  }, []);
 
   const handleCompare = () => {
     if (selectedColleges.length >= 2) {
@@ -32,27 +57,16 @@ const SearchCompare = () => {
   };
 
   const toggleCollegeSelection = (college: College) => {
-    if (selectedColleges.find((c) => c.id === college.id)) {
-      setSelectedColleges(selectedColleges.filter((c) => c.id !== college.id));
+    if (selectedColleges.some((c) => c._id === college._id)) {
+      setSelectedColleges(selectedColleges.filter((c) => c._id !== college._id));
     } else if (selectedColleges.length < 3) {
       setSelectedColleges([...selectedColleges, college]);
     }
   };
 
-  // Helper function to convert state abbreviation to full name
-  function getLocationName(stateCode: string): string {
-    const states: Record<string, string> = {
-      ca: "California",
-      ma: "Massachusetts",
-      ny: "New York",
-      all: "All Locations", // Added for clarity
-    };
-    return states[stateCode] || stateCode;
-  }
 
   // Helper function to extract numeric value from tuition range string
   function getTuitionValue(tuitionRange: string): number {
-    // Extract the first number from strings like "$45,000/year"
     const match = tuitionRange.match(/\$([0-9,]+)/);
     if (match && match[1]) {
       return parseInt(match[1].replace(/,/g, ""));
@@ -65,7 +79,7 @@ const SearchCompare = () => {
     // Filter by search query (college name)
     if (
       searchQuery &&
-      !college.name.toLowerCase().includes(searchQuery.toLowerCase())
+      !college.organizationName.toLowerCase().includes(searchQuery.toLowerCase())
     ) {
       return false;
     }
@@ -73,9 +87,7 @@ const SearchCompare = () => {
     // Filter by location (skip if "all" is selected)
     if (
       locationFilter !== "all" &&
-      !college.location
-        .toLowerCase()
-        .includes(getLocationName(locationFilter).toLowerCase())
+      !college.location.toLowerCase().includes(locationFilter.toLowerCase())
     ) {
       return false;
     }
@@ -105,6 +117,32 @@ const SearchCompare = () => {
     setLocationFilter("all");
     setTuitionFilter("all");
   };
+
+  if (isLoading) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex justify-center items-center h-64">
+          <p>Loading colleges...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+          <p>Error loading colleges: {error}</p>
+          <Button
+            className="mt-2"
+            onClick={() => window.location.reload()}
+          >
+            Retry
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -169,14 +207,14 @@ const SearchCompare = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredColleges.map((college) => (
             <div
-              key={college.id}
+              key={college._id}
               className={`bg-white rounded-lg shadow-md p-6 border-2 ${
-                selectedColleges.find((c) => c.id === college.id)
+                selectedColleges.some((c) => c._id === college._id)
                   ? "border-blue-500"
                   : "border-transparent"
               }`}
             >
-              <h3 className="text-xl font-semibold mb-2">{college.name}</h3>
+              <h3 className="text-xl font-semibold mb-2">{college.organizationName}</h3>
               <p className="text-gray-600 mb-4">{college.location}</p>
               <div className="space-y-2 mb-4">
                 <p>
@@ -193,9 +231,9 @@ const SearchCompare = () => {
                 </p>
               </div>
               <div className="flex flex-wrap gap-2 mb-4">
-                {college.courses.map((course) => (
+                {college.courses.map((course, index) => (
                   <span
-                    key={course}
+                    key={`${college._id}-${index}`}
                     className="px-2 py-1 bg-gray-100 rounded-full text-sm"
                   >
                     {course}
@@ -204,18 +242,18 @@ const SearchCompare = () => {
               </div>
               <Button
                 variant={
-                  selectedColleges.find((c) => c.id === college.id)
+                  selectedColleges.some((c) => c._id === college._id)
                     ? "secondary"
                     : "outline"
                 }
                 className="w-full"
                 onClick={() => toggleCollegeSelection(college)}
                 disabled={
-                  !selectedColleges.find((c) => c.id === college.id) &&
+                  !selectedColleges.some((c) => c._id === college._id) &&
                   selectedColleges.length >= 3
                 }
               >
-                {selectedColleges.find((c) => c.id === college.id)
+                {selectedColleges.some((c) => c._id === college._id)
                   ? "Remove from Comparison"
                   : selectedColleges.length >= 3
                   ? "Max 3 Selected"
@@ -237,10 +275,10 @@ const SearchCompare = () => {
               <div className="flex gap-2">
                 {selectedColleges.map((college) => (
                   <span
-                    key={college.id}
+                    key={college._id}
                     className="px-3 py-1 bg-blue-100 rounded-full text-sm"
                   >
-                    {college.name}
+                    {college.organizationName}
                   </span>
                 ))}
               </div>
@@ -259,6 +297,9 @@ const SearchCompare = () => {
         <DialogContent className="max-w-4xl bg-white">
           <DialogHeader>
             <DialogTitle>College Comparison</DialogTitle>
+            <DialogDescription>
+              Compare up to 3 colleges side by side
+            </DialogDescription>
           </DialogHeader>
           <div className="grid grid-cols-[auto,1fr,1fr,1fr] gap-4">
             <div className="font-medium">
@@ -270,17 +311,17 @@ const SearchCompare = () => {
               <div className="py-2">Courses</div>
             </div>
             {selectedColleges.map((college) => (
-              <div key={college.id}>
-                <div className="h-12 font-semibold">{college.name}</div>
+              <div key={college._id}>
+                <div className="h-12 font-semibold">{college.organizationName}</div>
                 <div className="py-2">{college.location}</div>
                 <div className="py-2">{college.tuitionRange}</div>
                 <div className="py-2">{college.acceptanceRate}</div>
                 <div className="py-2">{college.studentPopulation}</div>
                 <div className="py-2">
                   <div className="flex flex-wrap gap-1">
-                    {college.courses.map((course) => (
+                    {college.courses.map((course, index) => (
                       <span
-                        key={course}
+                        key={`${college._id}-${index}`}
                         className="px-2 py-1 bg-gray-100 rounded-full text-sm"
                       >
                         {course}

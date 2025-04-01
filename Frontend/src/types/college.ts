@@ -5,6 +5,7 @@ export interface VirtualTour {
   thumbnail: string;
 }
 export interface College {
+  _id: any;
   programs: any;
   id: string;
   organizationName: string;
