@@ -194,7 +194,7 @@ function AppContent() {
             path="/scholarships/submit-stories"
             element={<ScholarshipSubmitSuccessStory />}
           />
-          <Route path="/scholarships/:id" element={<ScholarshipDetails />} />
+          <Route path="/scholarships/:organizationName" element={<ScholarshipDetails />} />
           <Route
             path="/scholarships/:id/apply"
             element={<ScholarshipApplicationForm />}

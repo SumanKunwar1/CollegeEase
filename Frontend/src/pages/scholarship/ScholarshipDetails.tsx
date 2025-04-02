@@ -1,6 +1,5 @@
-import { useParams } from "react-router-dom";
-import { useNavigate } from "react-router-dom";
-
+import { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import {
   Calendar,
   Globe,
@@ -10,16 +9,111 @@ import {
   Star,
 } from "lucide-react";
 import { Button } from "../../components/ui/button";
-import { scholarshipsData } from "../../data/scholarshipdata";
+import axios from "axios";
+
+const api = axios.create({
+  baseURL: import.meta.env.VITE_API_BASE_URL || "http://localhost:4001/api/v1",
+  withCredentials: true,
+});
+
+type ScholarshipDetails = {
+  _id: string;
+  name: string;
+  organizationName: string;
+  amount: string;
+  deadline: string;
+  type: string;
+  status: string;
+  coverImage?: string;
+  eligibleCountries: string[];
+  vision: {
+    purpose: string;
+  };
+  eligibility: {
+    academicRequirements: string[];
+    studyLevel: string[];
+    ageLimit: string;
+  };
+  benefits: {
+    coverage: string[];
+    additionalPerks: string[];
+  };
+  applicationProcess: string[];
+  institution: {
+    history: string;
+    achievements: string[];
+  };
+};
 
 const ScholarshipDetails = () => {
-  const { id } = useParams();
+  const { organizationName } = useParams();
   const navigate = useNavigate();
+  const [scholarship, setScholarship] = useState<ScholarshipDetails | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const scholarship = scholarshipsData.find((s) => s.id === id);
+  useEffect(() => {
+    const fetchScholarship = async () => {
+      try {
+        if (!organizationName) {
+          throw new Error("Organization name is required");
+        }
+        
+        const response = await api.get(
+          `/scholarships/organization/${encodeURIComponent(organizationName)}`
+        );
+        setScholarship(response.data);
+        setIsLoading(false);
+      } catch (err) {
+        setError("Failed to fetch scholarship details. Please try again.");
+        setIsLoading(false);
+        console.error("Error fetching scholarship:", err);
+      }
+    };
+
+    fetchScholarship();
+  }, [organizationName]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 pt-20 flex justify-center items-center">
+        <div className="text-center">
+          <p>Loading scholarship details...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 pt-20 flex justify-center items-center">
+        <div className="text-center text-red-500">
+          <p>{error}</p>
+          <Button 
+            onClick={() => window.location.reload()} 
+            className="mt-4 bg-blue-600 hover:bg-blue-700"
+          >
+            Retry
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   if (!scholarship) {
-    return <div>Scholarship not found</div>;
+    return (
+      <div className="min-h-screen bg-gray-50 pt-20 flex justify-center items-center">
+        <div className="text-center">
+          <p>Scholarship not found</p>
+          <Button 
+            onClick={() => navigate("/scholarships")} 
+            className="mt-4 bg-blue-600 hover:bg-blue-700"
+          >
+            Back to Scholarships
+          </Button>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -27,7 +121,10 @@ const ScholarshipDetails = () => {
       {/* Hero Section */}
       <div className="relative h-96 rounded-xl overflow-hidden mb-8">
         <img
-          src="https://images.unsplash.com/photo-1523050854058-8df90110c9f1?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1740&q=80"
+          src={
+            scholarship.coverImage ||
+            "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1740&q=80"
+          }
           alt="Scholarship"
           className="w-full h-full object-cover"
         />
@@ -37,7 +134,7 @@ const ScholarshipDetails = () => {
             <div className="flex items-center space-x-4">
               <div className="flex items-center">
                 <Award className="h-5 w-5 mr-1" />
-                {scholarship.provider}
+                {scholarship.organizationName}
               </div>
               <div className="flex items-center">
                 <DollarSign className="h-5 w-5 text-green-400 mr-1" />
@@ -49,6 +146,14 @@ const ScholarshipDetails = () => {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <Button
+          onClick={() => navigate("/scholarships")}
+          variant="outline"
+          className="mb-8"
+        >
+          Back to Scholarships
+        </Button>
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-8">
@@ -201,9 +306,9 @@ const ScholarshipDetails = () => {
               </div>
               <Button
                 onClick={() =>
-                  navigate(`/scholarships/${scholarship.id}/apply`)
+                  navigate(`/scholarships/${scholarship._id}/apply`)
                 }
-                className="w-full mt-6 bg-blue-600 text-white"
+                className="w-full mt-6 bg-blue-600 hover:bg-blue-700 text-white"
               >
                 Apply Now
               </Button>
