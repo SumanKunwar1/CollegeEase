@@ -67,4 +67,5 @@ export const benefits = [
   "Data-Driven Insights – Make well-informed decisions with real-time analytics and expert advice.",
   "Personalized Support – Get guidance tailored to your academic goals and career interests.",
   "Completely Free to Use – Quality education accessible without financial barriers.",
+  "Career Advancement – Explore internships, mentorships, and job opportunities to boost your professional journey."
 ];

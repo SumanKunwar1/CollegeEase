@@ -5,7 +5,7 @@ export const scholarshipsData: ScholarshipDetails[] = [
     id: "1",
     coverImage: "",
     name: "Global Excellence Scholarship",
-    provider: "International Education Foundation",
+    organizationName: "International Education Foundation",
     type: "Merit-based",
     deadline: "2025-06-30",
     amount: "$50,000",

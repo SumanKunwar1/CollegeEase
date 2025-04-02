@@ -14,9 +14,8 @@ import collegeDetailsRouter from './routes/collegeDetails.routes';
 import applicationRouter from './routes/application.routes';
 import searchCompareRouter from './routes/searchCompare.routes'; 
 import virtualTourRouter from './routes/virtualTour.routes';
-
-
-
+import aboutUsRoutes from './routes/aboutUs.routes';
+import scholarshipRouter from './routes/scholarship.routes';
 
 dotenv.config();
 
@@ -50,6 +49,8 @@ app.use('/api/v1/college-details', collegeDetailsRouter);
 app.use('/api/v1/applications', applicationRouter);
 app.use('/api/v1/search-compare', searchCompareRouter);
 app.use('/api/v1/virtual-tours', virtualTourRouter);
+app.use('/api/v1/aboutus', aboutUsRoutes); 
+app.use('/api/v1', scholarshipRouter);  
 
 
 // Error handling

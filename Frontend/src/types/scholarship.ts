@@ -1,8 +1,9 @@
+// types/scholarship.ts
 export interface ScholarshipDetails {
   id: string;
   coverImage: string;
   name: string;
-  provider: string;
+  organizationName: string; // Changed from provider
   type: "Merit-based" | "Need-based" | "Research" | "Sports" | "Cultural";
   deadline: string;
   amount: string;

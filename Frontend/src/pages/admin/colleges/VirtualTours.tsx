@@ -283,8 +283,8 @@ const AdminVirtualTours = () => {
 
       {/* Dialog for managing tours */}
       <Dialog open={selectedCollege !== null} onOpenChange={(open) => !open && setSelectedCollege(null)}>
-        <DialogContent className="max-w-4xl bg-white">
-          <DialogHeader>
+      <DialogContent className="max-w-[50vw] sm:max-w-[50vw] md:max-w-xl lg:max-w-2xl bg-white">
+      <DialogHeader>
             <DialogTitle className="text-xl">{selectedCollege?.organizationName} - Virtual Tours</DialogTitle>
             <DialogDescription>
               Manage virtual tours for this college. Add, edit, or remove tours as needed.

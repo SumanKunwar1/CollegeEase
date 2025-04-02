@@ -589,7 +589,7 @@ function AppContent() {
             }
           />
           <Route
-            path="/admin/scholarships/scholarships-finder"
+            path="/admin/scholarships"
             element={
               <PrivateRoute
                 element={
@@ -601,7 +601,7 @@ function AppContent() {
             }
           />
           <Route
-            path="/admin/scholarships/:id"
+            path="/admin/scholarships/:organizationName"
             element={
               <PrivateRoute
                 element={

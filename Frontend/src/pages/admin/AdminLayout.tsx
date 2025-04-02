@@ -55,7 +55,7 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
       dropdown: [
         {
           name: "Scholarship Finder",
-          path: "/admin/scholarships/scholarships-finder",
+          path: "/admin/scholarships",
         },
         {
           name: "Smart Predictor",

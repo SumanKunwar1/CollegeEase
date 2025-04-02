@@ -1,7 +1,6 @@
-/* eslint-disable react-hooks/rules-of-hooks */
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   Calendar,
@@ -26,18 +25,23 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../../../components/ui/select";
-import { scholarshipsData } from "../../../data/scholarshipdata";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogDescription,
 } from "../../../components/ui/dialog";
 import { Label } from "../../../components/ui/label";
 import type { ScholarshipDetails } from "../../../types/scholarship";
+import axios from "axios";
 
-// Define the allowed types for status and scholarship type
+const api = axios.create({
+  baseURL: import.meta.env.VITE_API_BASE_URL || "http://localhost:4001/api/v1",
+  withCredentials: true,
+});
+
 type ScholarshipStatus = "Open" | "Closing Soon" | "Closed";
 type ScholarshipType =
   | "Merit-based"
@@ -177,7 +181,6 @@ const EditableList = ({
   );
 };
 
-// Custom component for numbered items
 const NumberedIcon = ({ number }: { number: number }) => (
   <div className="flex-shrink-0 w-6 h-6 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 text-sm font-medium">
     {number}
@@ -185,64 +188,99 @@ const NumberedIcon = ({ number }: { number: number }) => (
 );
 
 const AdminScholarshipDetails = () => {
-  const { id } = useParams();
+  const { organizationName } = useParams();
   const navigate = useNavigate();
-
-  const initialScholarship = scholarshipsData.find((s) => s.id === id);
-
-  if (!initialScholarship) {
-    return <div>Scholarship not found</div>;
-  }
-
-  const [scholarship, setScholarship] = useState<ScholarshipDetails>({
-    ...initialScholarship,
-  });
+  const [scholarship, setScholarship] = useState<ScholarshipDetails | null>(null);
   const [isImageDialogOpen, setIsImageDialogOpen] = useState(false);
-  const [imageUrl, setImageUrl] = useState(scholarship.coverImage || "");
+  const [imageUrl, setImageUrl] = useState("");
   const [hasChanges, setHasChanges] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchScholarship = async () => {
+      try {
+        if (!organizationName) {
+          throw new Error("Organization name is required");
+        }
+        
+        const response = await api.get(
+          `/scholarships/organization/${encodeURIComponent(organizationName)}`
+        );
+        setScholarship(response.data);
+        setImageUrl(response.data.coverImage || "");
+        setIsLoading(false);
+      } catch (err) {
+        setError("Failed to fetch scholarship details. Please try again.");
+        setIsLoading(false);
+        console.error("Error fetching scholarship:", err);
+      }
+    };
+
+    fetchScholarship();
+  }, [organizationName]);
 
   const updateScholarship = (updates: Partial<ScholarshipDetails>) => {
-    setScholarship((prev) => ({ ...prev, ...updates }));
-    setHasChanges(true);
+    if (scholarship) {
+      setScholarship({ ...scholarship, ...updates });
+      setHasChanges(true);
+    }
   };
 
   const handleSaveImage = () => {
-    updateScholarship({ coverImage: imageUrl });
-    setIsImageDialogOpen(false);
+    if (scholarship) {
+      updateScholarship({ coverImage: imageUrl });
+      setIsImageDialogOpen(false);
+    }
   };
 
-  const handleSaveChanges = () => {
-    // In a real application, this would save to a database
-    alert("Changes saved successfully!");
-    setHasChanges(false);
+  const handleSaveChanges = async () => {
+    if (!scholarship || !organizationName) return;
+
+    try {
+      const response = await api.put(
+        `/scholarships/organization/${encodeURIComponent(organizationName)}`,
+        scholarship
+      );
+      setScholarship(response.data);
+      setHasChanges(false);
+    } catch (err) {
+      console.error("Error updating scholarship:", err);
+      setError("Failed to save changes. Please try again.");
+    }
   };
 
-  // Helper functions for updating nested properties
   const updateEligibilityAcademic = (items: string[]) => {
-    updateScholarship({
-      eligibility: {
-        ...scholarship.eligibility,
-        academicRequirements: items,
-      },
-    });
+    if (scholarship) {
+      updateScholarship({
+        eligibility: {
+          ...scholarship.eligibility,
+          academicRequirements: items,
+        },
+      });
+    }
   };
 
   const updateBenefitsCoverage = (items: string[]) => {
-    updateScholarship({
-      benefits: {
-        ...scholarship.benefits,
-        coverage: items,
-      },
-    });
+    if (scholarship) {
+      updateScholarship({
+        benefits: {
+          ...scholarship.benefits,
+          coverage: items,
+        },
+      });
+    }
   };
 
   const updateBenefitsPerks = (items: string[]) => {
-    updateScholarship({
-      benefits: {
-        ...scholarship.benefits,
-        additionalPerks: items,
-      },
-    });
+    if (scholarship) {
+      updateScholarship({
+        benefits: {
+          ...scholarship.benefits,
+          additionalPerks: items,
+        },
+      });
+    }
   };
 
   const updateApplicationProcess = (items: string[]) => {
@@ -252,13 +290,51 @@ const AdminScholarshipDetails = () => {
   };
 
   const updateInstitutionAchievements = (items: string[]) => {
-    updateScholarship({
-      institution: {
-        ...scholarship.institution,
-        achievements: items,
-      },
-    });
+    if (scholarship) {
+      updateScholarship({
+        institution: {
+          ...scholarship.institution,
+          achievements: items,
+        },
+      });
+    }
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 pt-20 flex justify-center items-center">
+        <div className="text-center">
+          <p>Loading scholarship details...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 pt-20 flex justify-center items-center">
+        <div className="text-center text-red-500">
+          <p>{error}</p>
+          <Button onClick={() => window.location.reload()} className="mt-4">
+            Retry
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!scholarship) {
+    return (
+      <div className="min-h-screen bg-gray-50 pt-20 flex justify-center items-center">
+        <div className="text-center">
+          <p>Scholarship not found</p>
+          <Button onClick={() => navigate("/admin/scholarships")} className="mt-4">
+            Back to Scholarships
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 pt-20">
@@ -288,9 +364,9 @@ const AdminScholarshipDetails = () => {
               <div className="flex items-center">
                 <Award className="h-5 w-5 mr-1" />
                 <Input
-                  value={scholarship.provider}
+                  value={scholarship.organizationName}
                   onChange={(e) =>
-                    updateScholarship({ provider: e.target.value })
+                    updateScholarship({ organizationName: e.target.value })
                   }
                   className="bg-transparent border-white text-white w-auto"
                 />
@@ -313,7 +389,7 @@ const AdminScholarshipDetails = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-8">
         <div className="flex justify-between items-center">
           <Button
-            onClick={() => navigate("/admin/scholarships/scholarships-finder")}
+            onClick={() => navigate("/admin/scholarships")}
             variant="outline"
           >
             Back to Scholarships
@@ -553,7 +629,7 @@ const AdminScholarshipDetails = () => {
                   <Label htmlFor="ageLimit">Age Limit</Label>
                   <Input
                     id="ageLimit"
-                    value={scholarship.eligibility.ageLimit}
+                    value={scholarship.eligibility.ageLimit || ""}
                     onChange={(e) =>
                       updateScholarship({
                         eligibility: {
@@ -646,9 +722,12 @@ const AdminScholarshipDetails = () => {
 
       {/* Image Upload Dialog */}
       <Dialog open={isImageDialogOpen} onOpenChange={setIsImageDialogOpen}>
-        <DialogContent className="sm:max-w-[500px] bg-white text-black">
+        <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
             <DialogTitle>Update Cover Image</DialogTitle>
+            <DialogDescription>
+              Enter the URL for the new cover image
+            </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div>
@@ -664,7 +743,7 @@ const AdminScholarshipDetails = () => {
               <div className="mt-2">
                 <p className="text-sm text-gray-500 mb-2">Preview:</p>
                 <img
-                  src={imageUrl || "/placeholder.svg"}
+                  src={imageUrl}
                   alt="Preview"
                   className="max-h-[200px] object-cover rounded-md"
                   onError={(e) => {
