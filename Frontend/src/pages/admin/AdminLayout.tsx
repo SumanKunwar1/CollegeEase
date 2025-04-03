@@ -57,18 +57,12 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
           name: "Scholarship Finder",
           path: "/admin/scholarships",
         },
-        {
-          name: "Smart Predictor",
-          path: "/admin/scholarships/smart-predictor",
-        },
+       
         {
           name: "Application Guides",
           path: "/admin/scholarships/application-guide",
         },
-        {
-          name: "Success Stories",
-          path: "/admin/scholarships/success-stories",
-        },
+        
       ],
     },
     {

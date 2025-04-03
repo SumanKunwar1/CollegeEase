@@ -18,6 +18,8 @@ import virtualTourRouter from './routes/virtualTour.routes';
 import aboutUsRoutes from './routes/aboutUs.routes';
 import scholarshipRouter from './routes/scholarship.routes';
 import scholarshipApplicationRouter from './routes/scholarshipApplication.routes';
+import successStoryRouter from './routes/successStory.routes';
+
 
 dotenv.config();
 
@@ -59,6 +61,7 @@ app.use('/api/v1/virtual-tours', virtualTourRouter);
 app.use('/api/v1/aboutus', aboutUsRoutes);
 app.use('/api/v1', scholarshipRouter);
 app.use('/api/v1/scholarship-applications', scholarshipApplicationRouter);
+app.use('/api/v1/success-stories', successStoryRouter);
 
 // Error handling
 app.use(errorHandler);

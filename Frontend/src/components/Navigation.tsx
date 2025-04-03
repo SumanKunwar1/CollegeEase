@@ -49,7 +49,7 @@ const Navigation: React.FC<NavigationProps> = ({}) => {
       dropdown: [
         {
           name: "Scholarship Finder",
-          path: "/scholarships/scholarships-finder",
+          path: "/scholarships",
         },
         { name: "Smart Predictor", path: "/scholarships/smart-predictor" },
         {

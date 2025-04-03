@@ -1,43 +1,89 @@
-import { Quote, Award, ArrowRight } from "lucide-react";
+import { Quote, Award, ArrowRight, Loader2 } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import { useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { toast } from "react-hot-toast";
+
+interface SuccessStory {
+  _id: string;
+  name: string;
+  image: string;
+  university: string;
+  major: string;
+  amountRaised: number;
+  quote: string;
+  impact: string[];
+  createdAt: string;
+  updatedAt: string;
+}
 
 const SuccessStories = () => {
   const navigate = useNavigate();
-  const stories = [
-    {
-      id: 1,
-      name: "Sarah Chen",
-      scholarship: "Global Merit Scholarship",
-      amount: "$25,000",
-      university: "Stanford University",
-      image:
-        "https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&auto=format&fit=crop&w=256&q=80",
-      quote:
-        "The scholarship application process seemed daunting at first, but with persistence and the right guidance, I was able to secure funding for my dream university.",
-      tips: [
-        "Start applications early",
-        "Personalize each application",
-        "Get multiple people to review your essays",
-      ],
-    },
-    {
-      id: 2,
-      name: "James Rodriguez",
-      scholarship: "STEM Excellence Award",
-      amount: "$15,000",
-      university: "MIT",
-      image:
-        "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-1.2.1&auto=format&fit=crop&w=256&q=80",
-      quote:
-        "I almost didn't apply thinking my chances were low. But I took the chance, and it changed my entire academic journey.",
-      tips: [
-        "Don't self-reject",
-        "Highlight unique experiences",
-        "Follow up with recommenders",
-      ],
-    },
-  ];
+  const [stories, setStories] = useState<SuccessStory[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchSuccessStories = async () => {
+      try {
+        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/success-stories`);
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch success stories');
+        }
+
+        const data = await response.json();
+        setStories(data.data);
+      } catch (err) {
+        console.error('Error fetching success stories:', err);
+        setError(err instanceof Error ? err.message : 'An unknown error occurred');
+        toast.error('Failed to load success stories');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchSuccessStories();
+  }, []);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 pt-20 flex items-center justify-center">
+        <Loader2 className="h-12 w-12 animate-spin text-indigo-600" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 pt-20 flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">Error Loading Stories</h1>
+          <p className="text-gray-600 mb-6">{error}</p>
+          <Button onClick={() => window.location.reload()}>Try Again</Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (stories.length === 0) {
+    return (
+      <div className="min-h-screen bg-gray-50 pt-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 text-center">
+          <h1 className="text-3xl font-bold text-gray-900 mb-4">No Success Stories Yet</h1>
+          <p className="text-gray-600 mb-6">
+            Be the first to share your scholarship success story!
+          </p>
+          <Button
+            onClick={() => navigate(`/scholarships/submit-stories`)}
+            size="lg"
+          >
+            Share Your Story
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 pt-20">
@@ -52,7 +98,7 @@ const SuccessStories = () => {
         <div className="grid gap-8 lg:grid-cols-2 mb-12">
           {stories.map((story) => (
             <div
-              key={story.id}
+              key={story._id}
               className="bg-white rounded-lg shadow-lg overflow-hidden"
             >
               <div className="p-6">
@@ -75,10 +121,10 @@ const SuccessStories = () => {
                     <Award className="h-5 w-5 text-indigo-500 flex-shrink-0 mt-1" />
                     <div>
                       <p className="font-medium text-gray-900">
-                        {story.scholarship}
+                        {story.major}
                       </p>
                       <p className="text-indigo-600 font-semibold">
-                        {story.amount}
+                        ${story.amountRaised.toLocaleString()} raised
                       </p>
                     </div>
                   </div>
@@ -93,16 +139,16 @@ const SuccessStories = () => {
 
                 <div>
                   <h3 className="font-medium text-gray-900 mb-3">
-                    Top Tips from {story.name.split(" ")[0]}
+                    Achievements & Impact
                   </h3>
                   <ul className="space-y-2">
-                    {story.tips.map((tip, index) => (
+                    {story.impact.map((item, index) => (
                       <li
                         key={index}
                         className="flex items-center space-x-2 text-gray-600"
                       >
                         <ArrowRight className="h-4 w-4 text-indigo-500" />
-                        <span>{tip}</span>
+                        <span>{item}</span>
                       </li>
                     ))}
                   </ul>

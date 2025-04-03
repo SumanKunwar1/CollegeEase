@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Calculator,
   CheckCircle,
@@ -21,7 +21,37 @@ import {
   DialogHeader,
   DialogTitle,
 } from "../../components/ui/dialog";
-import { scholarshipsData } from "../../data/scholarshipdata";
+
+interface Scholarship {
+  id: string;
+  name: string;
+  organizationName: string;
+  type: string;
+  deadline: string;
+  amount: string;
+  status: string;
+  coverImage: string;
+  requirements: {
+    minimumGPA: number;
+    preferredGPA: number;
+    competitiveGPA: number;
+    majorWeights: Record<string, number>;
+    countryDiversity: {
+      priority: string[];
+      weight: number;
+    };
+  };
+  statistics: {
+    averageGPAAwarded: number;
+    totalApplications: number;
+    acceptanceRate: number;
+    majorDistribution: Record<string, number>;
+  };
+  vision: {
+    purpose: string;
+  };
+  eligibleCountries: string[];
+}
 
 interface PredictionResult {
   percentage: number;
@@ -36,6 +66,7 @@ interface PredictionResult {
 }
 
 const SmartPredictor = () => {
+  const [scholarships, setScholarships] = useState<Scholarship[]>([]);
   const [selectedScholarship, setSelectedScholarship] = useState("");
   const [gpa, setGpa] = useState("");
   const [major, setMajor] = useState("");
@@ -43,11 +74,66 @@ const SmartPredictor = () => {
   const [showResult, setShowResult] = useState(false);
   const [predictionResult, setPredictionResult] =
     useState<PredictionResult | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    const fetchScholarships = async () => {
+      try {
+        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/scholarships`);
+        if (!response.ok) {
+          throw new Error("Failed to fetch scholarships");
+        }
+        const data = await response.json();
+        // Add id field to each scholarship (using _id from MongoDB or generating a new one)
+        const formattedData = data.map((scholarship: any) => ({
+          ...scholarship,
+          id: scholarship._id || Math.random().toString(36).substring(2, 9),
+          requirements: scholarship.requirements || {
+            minimumGPA: 3.0,
+            preferredGPA: 3.5,
+            competitiveGPA: 3.7,
+            majorWeights: {
+              "Computer Science": 1.0,
+              "Engineering": 0.9,
+              "Medicine": 0.8,
+              "Business": 0.7,
+              "Other": 0.5
+            },
+            countryDiversity: {
+              priority: ["Nepal", "malaysia","India", "Nigeria", "Brazil", "Vietnam"],
+              weight: 1.2
+            }
+          },
+          statistics: scholarship.statistics || {
+            averageGPAAwarded: 3.6,
+            totalApplications: 1000,
+            acceptanceRate: 0.1,
+            majorDistribution: {
+              "Computer Science": 0.3,
+              "Engineering": 0.25,
+              "Medicine": 0.2,
+              "Business": 0.15,
+              "Other": 0.1
+            }
+          },
+          eligibleCountries: scholarship.eligibleCountries || ["Nepal", "malaysia","Singapore","India", "Nigeria", "Brazil", "Vietnam"]
+        }));
+        setScholarships(formattedData);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "An unknown error occurred");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchScholarships();
+  }, []);
 
   const calculatePrediction = () => {
-    const scholarship =
-      scholarshipsData.find((s) => s.id === selectedScholarship) ||
-      scholarshipsData[0];
+    const scholarship = scholarships.find((s) => s.id === selectedScholarship);
+    if (!scholarship) return;
+
     const gpaNum = parseFloat(gpa);
     let scores = {
       gpaScore: 0,
@@ -163,6 +249,34 @@ const SmartPredictor = () => {
     setShowResult(true);
   };
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mx-auto mb-4"></div>
+          <p className="text-lg text-gray-700">Loading scholarships...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white flex items-center justify-center">
+        <div className="text-center">
+          <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+          <p className="text-lg text-gray-700">{error}</p>
+          <Button
+            className="mt-4"
+            onClick={() => window.location.reload()}
+          >
+            Try Again
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -193,7 +307,7 @@ const SmartPredictor = () => {
                   <SelectValue placeholder="Choose a scholarship" />
                 </SelectTrigger>
                 <SelectContent className="bg-white">
-                  {scholarshipsData.map((scholarship) => (
+                  {scholarships.map((scholarship) => (
                     <SelectItem key={scholarship.id} value={scholarship.id}>
                       {scholarship.name} ({scholarship.amount})
                     </SelectItem>
@@ -203,8 +317,8 @@ const SmartPredictor = () => {
               {selectedScholarship && (
                 <div className="mt-2 text-sm text-gray-500">
                   {
-                    scholarshipsData.find((s) => s.id === selectedScholarship)
-                      ?.vision.purpose
+                    scholarships.find((s) => s.id === selectedScholarship)
+                      ?.vision?.purpose
                   }
                 </div>
               )}
@@ -255,7 +369,7 @@ const SmartPredictor = () => {
                   <SelectValue placeholder="Select your country" />
                 </SelectTrigger>
                 <SelectContent className="bg-white">
-                  {scholarshipsData[0]?.eligibleCountries.map((country) => (
+                  {scholarships[0]?.eligibleCountries?.map((country) => (
                     <SelectItem key={country} value={country}>
                       {country}
                     </SelectItem>
