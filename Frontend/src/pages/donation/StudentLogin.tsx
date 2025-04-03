@@ -84,7 +84,7 @@ export default function StudentLogin() {
             <p className="text-gray-600">
               Don't have an account?{" "}
               <a
-                href="/register" // Replace with your registration route
+                href="/donate/student-registration" 
                 className="text-blue-600 hover:underline"
               >
                 Create Account

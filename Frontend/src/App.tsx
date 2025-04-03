@@ -107,12 +107,12 @@ import AdminVirtualTours from "./pages/admin/colleges/VirtualTours";
 import AdminApplicationGuides from "./pages/admin/colleges/ApplicationGuides";
 
 //admin-donation
-import AdminDonationPage from "./pages/admin/donation/DonatePage";
 import AdminDonationForm from "./pages/donation/DonationForm";
 import AdminStudentRegistration from "./pages/donation/DonationStudentRegistration";
 import AdminDonationSuccessStories from "./pages/admin/donation/DonationSuccessStories";
 import AdminHowItWorks from "./pages/donation/HowItWorks";
 import AdminStudentProfiles from "./pages/admin/donation/StudentProfile";
+import AdminStudentRegistrations from "./pages/admin/donation/StudentData";
 
 //admin find mentor
 import { AdminMentorsPage } from "./pages/admin/montorship/AdminFindMentor";
@@ -485,7 +485,7 @@ function AppContent() {
               <PrivateRoute
                 element={
                   <AdminLayout>
-                    <AdminDonationPage />
+                    <AdminStudentRegistrations />
                   </AdminLayout>
                 }
               />

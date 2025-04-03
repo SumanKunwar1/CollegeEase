@@ -1,12 +1,7 @@
-import { Toaster, toast } from "react-hot-toast";
+import { Toaster } from "react-hot-toast";
 import { GraduationCap, LogIn, UserPlus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import {
-  auth,
-  googleProvider,
-  facebookProvider,
-  signInWithPopup,
-} from "../types/firebase";
+
 
 function DonationPage() {
   const navigate = useNavigate();
@@ -19,29 +14,7 @@ function DonationPage() {
     navigate("/donate/student-login");
   };
 
-  const handleGoogleLogin = async () => {
-    try {
-      const result = await signInWithPopup(auth, googleProvider);
-      const user = result.user;
-      toast.success(`Logged in as ${user.displayName || user.email}`);
-      navigate("/donate/student-dashboard"); // Redirect to dashboard after login
-    } catch (error) {
-      toast.error("Failed to log in with Google");
-      console.error(error);
-    }
-  };
 
-  const handleFacebookLogin = async () => {
-    try {
-      const result = await signInWithPopup(auth, facebookProvider);
-      const user = result.user;
-      toast.success(`Logged in as ${user.displayName || user.email}`);
-      navigate("/donate/student-dashboard"); // Redirect to dashboard after login
-    } catch (error) {
-      toast.error("Failed to log in with Facebook");
-      console.error(error);
-    }
-  };
 
   return (
     <div className="min-h-screen bg-gradient-to-r from-blue-50 to-blue-100 flex items-center justify-center p-6">
@@ -89,31 +62,7 @@ function DonationPage() {
             </button>
           </div>
 
-          {/* Social Login Buttons */}
-          <div className="space-y-4">
-            <button
-              onClick={handleGoogleLogin}
-              className="w-full bg-red-600 text-white py-2 rounded-lg hover:bg-red-700 transition duration-300 flex items-center justify-center"
-            >
-              <img
-                src="https://img.icons8.com/color/24/000000/google-logo.png"
-                alt="Google Logo"
-                className="h-5 w-5 mr-2"
-              />
-              Login with Google
-            </button>
-            <button
-              onClick={handleFacebookLogin}
-              className="w-full bg-blue-800 text-white py-2 rounded-lg hover:bg-blue-900 transition duration-300 flex items-center justify-center"
-            >
-              <img
-                src="https://img.icons8.com/color/24/000000/facebook-new.png"
-                alt="Facebook Logo"
-                className="h-5 w-5 mr-2"
-              />
-              Login with Facebook
-            </button>
-          </div>
+          
         </div>
       </div>
       <Toaster position="top-right" />

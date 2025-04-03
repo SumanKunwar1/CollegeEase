@@ -19,6 +19,8 @@ import aboutUsRoutes from './routes/aboutUs.routes';
 import scholarshipRouter from './routes/scholarship.routes';
 import scholarshipApplicationRouter from './routes/scholarshipApplication.routes';
 import successStoryRouter from './routes/successStory.routes';
+import studentRouter from './routes/student.routes';
+
 
 
 dotenv.config();
@@ -41,6 +43,14 @@ if (process.env.NODE_ENV === 'development') {
   app.use(morgan('dev'));
 }
 
+
+app.use((req, res, next) => {
+  console.log(`Incoming request: ${req.method} ${req.url}`);
+  console.log('Request headers:', req.headers);
+  next();
+});
+
+
 // Create uploads directory if it doesn't exist
 const uploadsDir = path.join(__dirname, '../public/uploads');
 if (!fs.existsSync(uploadsDir)) {
@@ -49,6 +59,8 @@ if (!fs.existsSync(uploadsDir)) {
 
 // Static files
 app.use('/uploads', express.static(uploadsDir));
+
+
 
 // Routes
 app.use('/api/v1/auth', authRouter);
@@ -62,9 +74,17 @@ app.use('/api/v1/aboutus', aboutUsRoutes);
 app.use('/api/v1', scholarshipRouter);
 app.use('/api/v1/scholarship-applications', scholarshipApplicationRouter);
 app.use('/api/v1/success-stories', successStoryRouter);
+app.use('/api/v1/students', studentRouter);
+
+
 
 // Error handling
 app.use(errorHandler);
+
+app.use((req, res, next) => {
+  console.log('Request body size:', req.socket.bytesRead);
+  next();
+});
 
 // Database connection
 connectDB().then(() => {
