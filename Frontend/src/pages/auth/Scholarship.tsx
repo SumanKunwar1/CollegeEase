@@ -13,7 +13,7 @@ const navigation = [
 ];
 
 export function ScholarshipDashboard() {
-  const { id } = useParams();
+  const { organizationName } = useParams();
   const location = useLocation();
   const currentPath = location.pathname.split("/").pop();
 
@@ -41,7 +41,7 @@ export function ScholarshipDashboard() {
             return (
               <Link
                 key={item.name}
-                to={`/dashboard/scholarship/${id}/${item.href}`}
+                to={`/dashboard/scholarship/${organizationName}/${item.href}`}
                 className={`
                   flex items-center px-1 py-4 text-sm font-medium border-b-2 
                   ${

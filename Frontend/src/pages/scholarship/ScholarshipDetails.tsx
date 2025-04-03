@@ -306,7 +306,7 @@ const ScholarshipDetails = () => {
               </div>
               <Button
                 onClick={() =>
-                  navigate(`/scholarships/${scholarship._id}/apply`)
+                  navigate(`/scholarships/${scholarship.organizationName}/apply`)
                 }
                 className="w-full mt-6 bg-blue-600 hover:bg-blue-700 text-white"
               >

@@ -196,11 +196,11 @@ function AppContent() {
           />
           <Route path="/scholarships/:organizationName" element={<ScholarshipDetails />} />
           <Route
-            path="/scholarships/:id/apply"
+            path="/scholarships/:organizationName/apply"
             element={<ScholarshipApplicationForm />}
           />
           <Route
-            path="/scholarships/:id/application-received"
+            path="/scholarships/:organizationName/application-received"
             element={<ApplicationReceived />}
           />
           <Route path="/donate" element={<DonatePage />} />

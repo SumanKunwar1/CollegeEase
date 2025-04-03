@@ -1,22 +1,48 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   ArrowLeft,
   ArrowRight,
   CheckCircle,
-  FileText,
-  Mail,
   User,
   BookOpen,
-  PenTool,
   DollarSign,
 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
+import axios from "axios";
+import toast from "react-hot-toast";
+
+interface FormData {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  dateOfBirth: string;
+  nationality: string;
+  address: string;
+  currentEducation: string;
+  institution: string;
+  gpa: string;
+  graduationDate: string;
+  satScore: string;
+  actScore: string;
+  toeflScore: string;
+  ieltsScore: string;
+  programLevel: string;
+  intendedMajor: string;
+  scholarshipType: string;
+  financialAid: boolean;
+  familyIncome: string;
+  achievements: string;
+}
 
 const ScholarshipApplicationForm = () => {
+  const { organizationName: encodedOrgName } = useParams<{ organizationName: string }>();
+  const organizationName = encodedOrgName ? decodeURIComponent(encodedOrgName) : "";
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
-  const [formData, setFormData] = useState({
-    // Personal Information
+  const [isLoading, setIsLoading] = useState(false);
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+  const [formData, setFormData] = useState<FormData>({
     firstName: "",
     lastName: "",
     email: "",
@@ -24,73 +50,101 @@ const ScholarshipApplicationForm = () => {
     dateOfBirth: "",
     nationality: "",
     address: "",
-
-    // Academic Information
     currentEducation: "",
     institution: "",
     gpa: "",
     graduationDate: "",
-
-    // Test Scores
     satScore: "",
     actScore: "",
     toeflScore: "",
     ieltsScore: "",
-
-    // Program Details
     programLevel: "",
     intendedMajor: "",
-    startTerm: "",
-
-    // Scholarship Information
     scholarshipType: "",
     financialAid: false,
     familyIncome: "",
-
-    // Documents
-    transcripts: null,
-    recommendationLetters: [],
-    personalStatement: "",
-    researchProposal: "",
-
-    // Additional Information
-    extracurriculars: "",
     achievements: "",
-    workExperience: "",
   });
 
-  const totalSteps = 6;
+  const totalSteps = 4;
+
+  useEffect(() => {
+    if (!organizationName) {
+      toast.error("Organization not specified");
+      navigate("/");
+    }
+  }, [organizationName, navigate]);
+
+  const validateStep = (step: number): boolean => {
+    const errors: Record<string, string> = {};
+    
+    if (step === 1) {
+      if (!formData.firstName) errors.firstName = "First name is required";
+      if (!formData.lastName) errors.lastName = "Last name is required";
+      if (!formData.email) {
+        errors.email = "Email is required";
+      } else if (!/^\S+@\S+\.\S+$/.test(formData.email)) {
+        errors.email = "Email is invalid";
+      }
+      if (!formData.phone) errors.phone = "Phone number is required";
+      if (!formData.dateOfBirth) errors.dateOfBirth = "Date of birth is required";
+      if (!formData.nationality) errors.nationality = "Nationality is required";
+      if (!formData.address) errors.address = "Address is required";
+    }
+
+    if (step === 2) {
+      if (!formData.currentEducation) errors.currentEducation = "Education level is required";
+      if (!formData.institution) errors.institution = "Institution is required";
+      if (!formData.gpa) {
+        errors.gpa = "GPA is required";
+      } else if (isNaN(parseFloat(formData.gpa))) {
+        errors.gpa = "GPA must be a number";
+      }
+      if (!formData.graduationDate) errors.graduationDate = "Graduation date is required";
+      if (!formData.programLevel) errors.programLevel = "Program level is required";
+      if (!formData.intendedMajor) errors.intendedMajor = "Intended major is required";
+    }
+
+    if (step === 3) {
+      if (!formData.scholarshipType) errors.scholarshipType = "Scholarship type is required";
+      if (!formData.familyIncome) {
+        errors.familyIncome = "Family income is required";
+      } else if (isNaN(parseInt(formData.familyIncome))) {
+        errors.familyIncome = "Family income must be a number";
+      }
+    }
+
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
 
   const handleInputChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
     const { name, value, type } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]:
-        type === "checkbox" ? (e.target as HTMLInputElement).checked : value,
+      [name]: type === "checkbox" ? (e.target as HTMLInputElement).checked : value,
     }));
-  };
-
-  const handleFileUpload = (
-    e: React.ChangeEvent<HTMLInputElement>,
-    fieldName: string
-  ) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setFormData((prev) => ({
-        ...prev,
-        [fieldName]: file,
-      }));
+    
+    // Clear error when user starts typing
+    if (formErrors[name]) {
+      setFormErrors(prev => {
+        const newErrors = {...prev};
+        delete newErrors[name];
+        return newErrors;
+      });
     }
   };
 
   const handleNext = () => {
-    if (currentStep < totalSteps) {
-      setCurrentStep((prev) => prev + 1);
-      window.scrollTo(0, 0);
+    if (validateStep(currentStep)) {
+      if (currentStep < totalSteps) {
+        setCurrentStep((prev) => prev + 1);
+        window.scrollTo(0, 0);
+      }
+    } else {
+      toast.error("Please fix the errors before proceeding");
     }
   };
 
@@ -101,10 +155,77 @@ const ScholarshipApplicationForm = () => {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Handle form submission
-    console.log("Form submitted:", formData);
+    
+    if (!organizationName) {
+      toast.error("Organization not specified");
+      return;
+    }
+  
+    if (!validateStep(currentStep)) {
+      toast.error("Please fix all errors before submitting");
+      return;
+    }
+  
+    setIsLoading(true);
+  
+    try {
+      const apiUrl = `${
+        import.meta.env.VITE_API_BASE_URL
+      }/scholarship-applications/${encodeURIComponent(organizationName)}/apply`;
+  
+      const payload = {
+        ...formData,
+        gpa: parseFloat(formData.gpa),
+        familyIncome: parseInt(formData.familyIncome),
+        financialAid: formData.financialAid.toString(),
+      };
+  
+      const response = await axios.post(apiUrl, payload, {
+        withCredentials: true,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+  
+      if (response.status === 200 || response.status === 201) {
+        navigate(`/scholarships/${encodeURIComponent(organizationName)}/application-received`);
+        toast.success("Application submitted successfully!");
+      } else {
+        throw new Error(`Unexpected status code: ${response.status}`);
+      }
+    } catch (error: any) {
+      console.error("Full error:", error);
+      
+      let errorMessage = "Failed to submit application";
+      if (error.response) {
+        errorMessage = error.response.data?.message || errorMessage;
+        console.error("Server response:", error.response.data);
+        
+        // Handle validation errors from backend
+        if (error.response.data?.error?.errors) {
+          const backendErrors = error.response.data.error.errors;
+          const errorMap: Record<string, string> = {};
+          
+          Object.keys(backendErrors).forEach(key => {
+            errorMap[key] = backendErrors[key].message;
+          });
+          
+          setFormErrors(errorMap);
+          errorMessage = "Please fix the validation errors";
+        }
+      } else if (error.request) {
+        console.error("No response received:", error.request);
+        errorMessage = "Could not connect to server. Please try again later.";
+      } else {
+        console.error("Request setup error:", error.message);
+      }
+      
+      toast.error(errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const renderStepContent = () => {
@@ -117,95 +238,130 @@ const ScholarshipApplicationForm = () => {
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 border-gray-300">
-                  First Name
+                <label className="block text-sm font-medium text-gray-700">
+                  First Name *
                 </label>
                 <input
                   type="text"
                   name="firstName"
                   value={formData.firstName}
                   onChange={handleInputChange}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border border-gray-400"
+                  className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border ${
+                    formErrors.firstName ? 'border-red-500' : 'border-gray-400'
+                  }`}
                   required
                 />
+                {formErrors.firstName && (
+                  <p className="mt-1 text-sm text-red-600">{formErrors.firstName}</p>
+                )}
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 ">
-                  Last Name
+                <label className="block text-sm font-medium text-gray-700">
+                  Last Name *
                 </label>
                 <input
                   type="text"
                   name="lastName"
                   value={formData.lastName}
                   onChange={handleInputChange}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border border-gray-400"
+                  className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border ${
+                    formErrors.lastName ? 'border-red-500' : 'border-gray-400'
+                  }`}
                   required
                 />
+                {formErrors.lastName && (
+                  <p className="mt-1 text-sm text-red-600">{formErrors.lastName}</p>
+                )}
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700">
-                  Email
+                  Email *
                 </label>
                 <input
                   type="email"
                   name="email"
                   value={formData.email}
                   onChange={handleInputChange}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border border-gray-400"
+                  className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border ${
+                    formErrors.email ? 'border-red-500' : 'border-gray-400'
+                  }`}
                   required
                 />
+                {formErrors.email && (
+                  <p className="mt-1 text-sm text-red-600">{formErrors.email}</p>
+                )}
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700">
-                  Phone Number
+                  Phone Number *
                 </label>
                 <input
                   type="tel"
                   name="phone"
                   value={formData.phone}
                   onChange={handleInputChange}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border border-gray-400"
+                  className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border ${
+                    formErrors.phone ? 'border-red-500' : 'border-gray-400'
+                  }`}
                   required
                 />
+                {formErrors.phone && (
+                  <p className="mt-1 text-sm text-red-600">{formErrors.phone}</p>
+                )}
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700">
-                  Date of Birth
+                  Date of Birth *
                 </label>
                 <input
                   type="date"
                   name="dateOfBirth"
                   value={formData.dateOfBirth}
                   onChange={handleInputChange}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border border-gray-400"
+                  className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border ${
+                    formErrors.dateOfBirth ? 'border-red-500' : 'border-gray-400'
+                  }`}
                   required
                 />
+                {formErrors.dateOfBirth && (
+                  <p className="mt-1 text-sm text-red-600">{formErrors.dateOfBirth}</p>
+                )}
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700">
-                  Nationality
+                  Nationality *
                 </label>
                 <input
                   type="text"
                   name="nationality"
                   value={formData.nationality}
                   onChange={handleInputChange}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border border-gray-400"
+                  className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border ${
+                    formErrors.nationality ? 'border-red-500' : 'border-gray-400'
+                  }`}
                   required
                 />
+                {formErrors.nationality && (
+                  <p className="mt-1 text-sm text-red-600">{formErrors.nationality}</p>
+                )}
               </div>
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-gray-700">
-                  Address
+                  Address *
                 </label>
                 <textarea
                   name="address"
                   value={formData.address}
                   onChange={handleInputChange}
                   rows={3}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border border-gray-400"
+                  className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border ${
+                    formErrors.address ? 'border-red-500' : 'border-gray-400'
+                  }`}
                   required
                 />
+                {formErrors.address && (
+                  <p className="mt-1 text-sm text-red-600">{formErrors.address}</p>
+                )}
               </div>
             </div>
           </div>
@@ -220,13 +376,15 @@ const ScholarshipApplicationForm = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700">
-                  Current Level of Education
+                  Current Level of Education *
                 </label>
                 <select
                   name="currentEducation"
                   value={formData.currentEducation}
                   onChange={handleInputChange}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border border-gray-400"
+                  className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border ${
+                    formErrors.currentEducation ? 'border-red-500' : 'border-gray-400'
+                  }`}
                   required
                 >
                   <option value="">Select Education Level</option>
@@ -235,23 +393,31 @@ const ScholarshipApplicationForm = () => {
                   <option value="masters">Master's Degree</option>
                   <option value="phd">PhD</option>
                 </select>
+                {formErrors.currentEducation && (
+                  <p className="mt-1 text-sm text-red-600">{formErrors.currentEducation}</p>
+                )}
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700">
-                  Current/Previous Institution
+                  Current/Previous Institution *
                 </label>
                 <input
                   type="text"
                   name="institution"
                   value={formData.institution}
                   onChange={handleInputChange}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border border-gray-400"
+                  className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border ${
+                    formErrors.institution ? 'border-red-500' : 'border-gray-400'
+                  }`}
                   required
                 />
+                {formErrors.institution && (
+                  <p className="mt-1 text-sm text-red-600">{formErrors.institution}</p>
+                )}
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700">
-                  GPA
+                  GPA *
                 </label>
                 <input
                   type="number"
@@ -261,22 +427,72 @@ const ScholarshipApplicationForm = () => {
                   step="0.01"
                   min="0"
                   max="4"
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border border-gray-400"
+                  className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border ${
+                    formErrors.gpa ? 'border-red-500' : 'border-gray-400'
+                  }`}
                   required
                 />
+                {formErrors.gpa && (
+                  <p className="mt-1 text-sm text-red-600">{formErrors.gpa}</p>
+                )}
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700">
-                  Expected Graduation Date
+                  Expected Graduation Date *
                 </label>
                 <input
                   type="date"
                   name="graduationDate"
                   value={formData.graduationDate}
                   onChange={handleInputChange}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border border-gray-400"
+                  className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border ${
+                    formErrors.graduationDate ? 'border-red-500' : 'border-gray-400'
+                  }`}
                   required
                 />
+                {formErrors.graduationDate && (
+                  <p className="mt-1 text-sm text-red-600">{formErrors.graduationDate}</p>
+                )}
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Program Level *
+                </label>
+                <select
+                  name="programLevel"
+                  value={formData.programLevel}
+                  onChange={handleInputChange}
+                  className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border ${
+                    formErrors.programLevel ? 'border-red-500' : 'border-gray-400'
+                  }`}
+                  required
+                >
+                  <option value="">Select Program Level</option>
+                  <option value="undergraduate">Undergraduate</option>
+                  <option value="graduate">Graduate</option>
+                  <option value="phd">PhD</option>
+                </select>
+                {formErrors.programLevel && (
+                  <p className="mt-1 text-sm text-red-600">{formErrors.programLevel}</p>
+                )}
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Intended Major *
+                </label>
+                <input
+                  type="text"
+                  name="intendedMajor"
+                  value={formData.intendedMajor}
+                  onChange={handleInputChange}
+                  className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border ${
+                    formErrors.intendedMajor ? 'border-red-500' : 'border-gray-400'
+                  }`}
+                  required
+                />
+                {formErrors.intendedMajor && (
+                  <p className="mt-1 text-sm text-red-600">{formErrors.intendedMajor}</p>
+                )}
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700">
@@ -310,110 +526,20 @@ const ScholarshipApplicationForm = () => {
         return (
           <div className="space-y-6">
             <h2 className="text-xl font-semibold flex items-center">
-              <FileText className="mr-2" /> Document Upload
-            </h2>
-            <div className="space-y-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  Academic Transcripts
-                </label>
-                <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
-                  <div className="space-y-1 text-center">
-                    <FileText className="mx-auto h-12 w-12 text-gray-400" />
-                    <div className="flex text-sm text-gray-600">
-                      <label className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
-                        <span>Upload a file</span>
-                        <input
-                          type="file"
-                          name="transcripts"
-                          onChange={(e) => handleFileUpload(e, "transcripts")}
-                          className="sr-only"
-                          accept=".pdf,.doc,.docx"
-                        />
-                      </label>
-                      <p className="pl-1">or drag and drop</p>
-                    </div>
-                    <p className="text-xs text-gray-500">PDF, DOC up to 10MB</p>
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  Letters of Recommendation
-                </label>
-                <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
-                  <div className="space-y-1 text-center">
-                    <Mail className="mx-auto h-12 w-12 text-gray-400" />
-                    <div className="flex text-sm text-gray-600">
-                      <label className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
-                        <span>Upload files</span>
-                        <input
-                          type="file"
-                          name="recommendationLetters"
-                          onChange={(e) =>
-                            handleFileUpload(e, "recommendationLetters")
-                          }
-                          className="sr-only"
-                          accept=".pdf,.doc,.docx"
-                          multiple
-                        />
-                      </label>
-                      <p className="pl-1">or drag and drop</p>
-                    </div>
-                    <p className="text-xs text-gray-500">
-                      PDF, DOC up to 10MB (2-3 letters)
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        );
-
-      case 4:
-        return (
-          <div className="space-y-6">
-            <h2 className="text-xl font-semibold flex items-center">
-              <PenTool className="mr-2" /> Personal Statement
-            </h2>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Write your personal statement (minimum 500 words)
-              </label>
-              <textarea
-                name="personalStatement"
-                value={formData.personalStatement}
-                onChange={handleInputChange}
-                rows={12}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border border-gray-400"
-                placeholder="Describe your academic interests, career goals, and why you're applying for this program..."
-                required
-              />
-              <p className="mt-2 text-sm text-gray-500">
-                Word count:{" "}
-                {formData.personalStatement.split(/\s+/).filter(Boolean).length}
-              </p>
-            </div>
-          </div>
-        );
-
-      case 5:
-        return (
-          <div className="space-y-6">
-            <h2 className="text-xl font-semibold flex items-center">
               <DollarSign className="mr-2" /> Scholarship Information
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-gray-700">
-                  Type of Scholarship
+                  Type of Scholarship *
                 </label>
                 <select
                   name="scholarshipType"
                   value={formData.scholarshipType}
                   onChange={handleInputChange}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border ${
+                    formErrors.scholarshipType ? 'border-red-500' : 'border-gray-400'
+                  }`}
                   required
                 >
                   <option value="">Select Scholarship Type</option>
@@ -425,21 +551,29 @@ const ScholarshipApplicationForm = () => {
                     International Student Scholarship
                   </option>
                 </select>
+                {formErrors.scholarshipType && (
+                  <p className="mt-1 text-sm text-red-600">{formErrors.scholarshipType}</p>
+                )}
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700">
-                  Annual Family Income
+                  Annual Family Income (USD) *
                 </label>
                 <input
                   type="number"
                   name="familyIncome"
                   value={formData.familyIncome}
                   onChange={handleInputChange}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border border-gray-400"
+                  className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border ${
+                    formErrors.familyIncome ? 'border-red-500' : 'border-gray-400'
+                  }`}
                   placeholder="USD"
                   required
                 />
+                {formErrors.familyIncome && (
+                  <p className="mt-1 text-sm text-red-600">{formErrors.familyIncome}</p>
+                )}
               </div>
 
               <div>
@@ -473,14 +607,13 @@ const ScholarshipApplicationForm = () => {
                   rows={4}
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border border-gray-400"
                   placeholder="List your academic achievements, awards, and honors..."
-                  required
                 />
               </div>
             </div>
           </div>
         );
 
-      case 6:
+      case 4:
         return (
           <div className="space-y-6">
             <h2 className="text-xl font-semibold flex items-center">
@@ -521,13 +654,42 @@ const ScholarshipApplicationForm = () => {
                   </div>
                   <div className="sm:col-span-1">
                     <dt className="text-sm font-medium text-gray-500">
+                      Intended Major
+                    </dt>
+                    <dd className="mt-1 text-sm text-gray-900">
+                      {formData.intendedMajor}
+                    </dd>
+                  </div>
+                  <div className="sm:col-span-1">
+                    <dt className="text-sm font-medium text-gray-500">
                       Scholarship Type
                     </dt>
                     <dd className="mt-1 text-sm text-gray-900">
                       {formData.scholarshipType}
                     </dd>
                   </div>
-                  {/* Add more summary fields as needed */}
+                  <div className="sm:col-span-1">
+                    <dt className="text-sm font-medium text-gray-500">
+                      Institution
+                    </dt>
+                    <dd className="mt-1 text-sm text-gray-900">
+                      {formData.institution}
+                    </dd>
+                  </div>
+                  <div className="sm:col-span-1">
+                    <dt className="text-sm font-medium text-gray-500">GPA</dt>
+                    <dd className="mt-1 text-sm text-gray-900">
+                      {formData.gpa}
+                    </dd>
+                  </div>
+                  <div className="sm:col-span-1">
+                    <dt className="text-sm font-medium text-gray-500">
+                      Family Income
+                    </dt>
+                    <dd className="mt-1 text-sm text-gray-900">
+                      ${formData.familyIncome}
+                    </dd>
+                  </div>
                 </dl>
               </div>
               <div className="px-4 py-3 bg-gray-50 text-right sm:px-6">
@@ -548,11 +710,10 @@ const ScholarshipApplicationForm = () => {
   return (
     <div className="min-h-screen bg-gray-50 py-12">
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Progress Bar */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
             <h1 className="text-3xl font-bold text-gray-900">
-              College Application
+              Scholarship Application - {organizationName}
             </h1>
             <span className="text-sm text-gray-500">
               Step {currentStep} of {totalSteps}
@@ -582,21 +743,17 @@ const ScholarshipApplicationForm = () => {
           </div>
         </div>
 
-        {/* Form */}
-        <form
-          onSubmit={handleSubmit}
-          className="bg-white shadow-lg rounded-lg p-8"
-        >
+        <form onSubmit={handleSubmit} className="bg-white shadow-lg rounded-lg p-8">
           {renderStepContent()}
 
-          {/* Navigation Buttons */}
           <div className="mt-8 flex justify-between">
             <button
               type="button"
               onClick={handlePrevious}
+              disabled={isLoading}
               className={`flex items-center px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 ${
                 currentStep === 1 ? "invisible" : ""
-              }`}
+              } ${isLoading ? "opacity-50 cursor-not-allowed" : ""}`}
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
               Previous
@@ -604,20 +761,29 @@ const ScholarshipApplicationForm = () => {
 
             {currentStep === totalSteps ? (
               <button
-                onClick={() =>
-                  navigate(`/scholarships/:id/application-received`)
-                }
                 type="submit"
-                className="flex items-center px-6 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                disabled={isLoading}
+                className={`flex items-center px-6 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
+                  isLoading ? "opacity-50 cursor-not-allowed" : ""
+                }`}
               >
-                Submit Application
-                <CheckCircle className="h-4 w-4 ml-2" />
+                {isLoading ? (
+                  "Submitting..."
+                ) : (
+                  <>
+                    Submit Application
+                    <CheckCircle className="h-4 w-4 ml-2" />
+                  </>
+                )}
               </button>
             ) : (
               <button
                 type="button"
                 onClick={handleNext}
-                className="flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                disabled={isLoading}
+                className={`flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
+                  isLoading ? "opacity-50 cursor-not-allowed" : ""
+                }`}
               >
                 Next
                 <ArrowRight className="h-4 w-4 ml-2" />

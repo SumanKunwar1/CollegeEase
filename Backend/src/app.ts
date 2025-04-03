@@ -3,6 +3,7 @@ import morgan from 'morgan';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import path from 'path';
+import fs from 'fs';
 import errorHandler from './middlewares/errorHandler';
 import authRouter from './routes/authRoute';
 import connectDB from './config/db';
@@ -16,6 +17,7 @@ import searchCompareRouter from './routes/searchCompare.routes';
 import virtualTourRouter from './routes/virtualTour.routes';
 import aboutUsRoutes from './routes/aboutUs.routes';
 import scholarshipRouter from './routes/scholarship.routes';
+import scholarshipApplicationRouter from './routes/scholarshipApplication.routes';
 
 dotenv.config();
 
@@ -37,21 +39,26 @@ if (process.env.NODE_ENV === 'development') {
   app.use(morgan('dev'));
 }
 
+// Create uploads directory if it doesn't exist
+const uploadsDir = path.join(__dirname, '../public/uploads');
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
+
 // Static files
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+app.use('/uploads', express.static(uploadsDir));
 
 // Routes
 app.use('/api/v1/auth', authRouter);
 app.use('/api/v1/admin', adminRouter);
 app.use('/api/v1/admin/colleges', collegeRouter);
 app.use('/api/v1/college-details', collegeDetailsRouter);
-app.use('/api/v1/college-details', collegeDetailsRouter);
 app.use('/api/v1/applications', applicationRouter);
 app.use('/api/v1/search-compare', searchCompareRouter);
 app.use('/api/v1/virtual-tours', virtualTourRouter);
-app.use('/api/v1/aboutus', aboutUsRoutes); 
-app.use('/api/v1', scholarshipRouter);  
-
+app.use('/api/v1/aboutus', aboutUsRoutes);
+app.use('/api/v1', scholarshipRouter);
+app.use('/api/v1/scholarship-applications', scholarshipApplicationRouter);
 
 // Error handling
 app.use(errorHandler);
