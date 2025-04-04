@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Search,
   Filter,
@@ -16,14 +16,86 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../../components/ui/select";
-import { donation } from "../../data/donations";
 import { useNavigate } from "react-router-dom";
+import { toast } from "react-hot-toast";
+
+interface DonationProfile {
+  _id: string;
+  studentName: string;
+  financialNeeds: string;
+  academicHistory: string;
+  goals: string;
+  raised: number;
+  goal: number;
+  image: string;
+  story?: string;
+}
 
 const StudentProfiles = () => {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [majorFilter, setMajorFilter] = useState("");
   const [countryFilter, setCountryFilter] = useState("");
+  const [profiles, setProfiles] = useState<DonationProfile[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({
+    totalStudents: 0,
+    totalRaised: 0,
+    activeDonors: 5678, // You might want to fetch this from API too
+    successRate: "89%", // You might want to calculate this from API data
+  });
+
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
+  useEffect(() => {
+    const fetchProfiles = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch(`${API_BASE_URL}/student-profiles`);
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch student profiles');
+        }
+
+        const data = await response.json();
+        const profilesData = data.data || data; // Handle both response formats
+        
+        setProfiles(profilesData);
+        
+        // Calculate stats
+        const totalRaised = profilesData.reduce((sum: number, profile: DonationProfile) => sum + profile.raised, 0);
+        setStats({
+          totalStudents: profilesData.length,
+          totalRaised,
+          activeDonors: 5678, // Replace with actual API call if available
+          successRate: "89%", // Replace with actual calculation if needed
+        });
+      } catch (error) {
+        console.error("Error fetching student profiles:", error);
+        toast.error("Failed to load student profiles");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProfiles();
+  }, [API_BASE_URL]);
+
+  const filteredProfiles = profiles.filter((profile) => {
+    const matchesSearch = profile.studentName.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesMajor = majorFilter ? profile.academicHistory === majorFilter : true;
+    const matchesCountry = countryFilter ? profile.financialNeeds === countryFilter : true;
+    return matchesSearch && matchesMajor && matchesCountry;
+  });
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount);
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 pt-20">
@@ -37,12 +109,13 @@ const StudentProfiles = () => {
           </p>
         </div>
 
+        {/* Stats Section */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
           {[
-            { icon: Heart, value: "1,234", label: "Students Supported" },
-            { icon: DollarSign, value: "$2.5M", label: "Total Donations" },
-            { icon: Users, value: "5,678", label: "Active Donors" },
-            { icon: TrendingUp, value: "89%", label: "Success Rate" },
+            { icon: Heart, value: stats.totalStudents.toLocaleString(), label: "Students Supported" },
+            { icon: DollarSign, value: formatCurrency(stats.totalRaised), label: "Total Donations" },
+            { icon: Users, value: stats.activeDonors.toLocaleString(), label: "Active Donors" },
+            { icon: TrendingUp, value: stats.successRate, label: "Success Rate" },
           ].map((stat, index) => (
             <div
               key={index}
@@ -63,6 +136,7 @@ const StudentProfiles = () => {
           ))}
         </div>
 
+        {/* Filters Section */}
         <div className="bg-white rounded-lg shadow-lg p-6 mb-8">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="relative">
@@ -96,9 +170,7 @@ const StudentProfiles = () => {
               </SelectContent>
             </Select>
             <Button
-              onClick={() =>
-                navigate(`/donate/donation-form/${donation[0].id}`)
-              } // Adjusted to use a specific profile's ID
+              onClick={() => navigate('/donate')}
               className="w-full"
             >
               <Filter className="h-4 w-4 mr-2" />
@@ -107,55 +179,72 @@ const StudentProfiles = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
-          {donation.map((profile) => (
-            <div
-              key={profile.id}
-              className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow"
-            >
-              <img
-                src={profile.image}
-                alt={profile.studentName}
-                className="w-full h-48 object-cover"
-              />
-              <div className="p-6">
-                <h3 className="text-xl font-bold text-gray-900">
-                  {profile.studentName}
-                </h3>
-                <p className="mt-2 text-gray-600">{profile.financialNeeds}</p>
-                <div className="mt-4 text-sm text-gray-600">
-                  <p>Academic History: {profile.academicHistory}</p>
-                </div>
-                <div className="mt-4 text-sm text-gray-600">
-                  <p>Goal: {profile.goals}</p>
-                </div>
-                <div className="mt-4">
-                  <div className="flex justify-between text-sm text-gray-600">
-                    <span>Raised: ${profile.raised.toLocaleString()}</span>
-                    <span>Goal: ${profile.goal.toLocaleString()}</span>
+        {/* Loading State */}
+        {loading && (
+          <div className="text-center py-12">
+            <p>Loading student profiles...</p>
+          </div>
+        )}
+
+        {/* Error State */}
+        {!loading && profiles.length === 0 && (
+          <div className="text-center py-12">
+            <p>No student profiles found</p>
+          </div>
+        )}
+
+        {/* Profiles Grid */}
+        {!loading && filteredProfiles.length > 0 && (
+          <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
+            {filteredProfiles.map((profile) => (
+              <div
+                key={profile._id}
+                className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow"
+              >
+                <img
+                  src={profile.image || "/placeholder.svg"}
+                  alt={profile.studentName}
+                  className="w-full h-48 object-cover"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = "/placeholder.svg";
+                  }}
+                />
+                <div className="p-6">
+                  <h3 className="text-xl font-bold text-gray-900">
+                    {profile.studentName}
+                  </h3>
+                  <p className="mt-2 text-gray-600">{profile.financialNeeds}</p>
+                  <div className="mt-4 text-sm text-gray-600">
+                    <p>Academic History: {profile.academicHistory}</p>
                   </div>
-                  <div className="mt-2 w-full bg-gray-200 rounded-full h-2">
-                    <div
-                      className="bg-indigo-600 h-2 rounded-full"
-                      style={{
-                        width: `${(profile.raised / profile.goal) * 100}%`,
-                      }}
-                    ></div>
+                  <div className="mt-4 text-sm text-gray-600">
+                    <p>Goal: {profile.goals}</p>
                   </div>
+                  <div className="mt-4">
+                    <div className="flex justify-between text-sm text-gray-600">
+                      <span>Raised: {formatCurrency(profile.raised)}</span>
+                      <span>Goal: {formatCurrency(profile.goal)}</span>
+                    </div>
+                    <div className="mt-2 w-full bg-gray-200 rounded-full h-2">
+                      <div
+                        className="bg-indigo-600 h-2 rounded-full"
+                        style={{
+                          width: `${Math.min((profile.raised / profile.goal) * 100, 100)}%`,
+                        }}
+                      ></div>
+                    </div>
+                  </div>
+                  <button
+                    className="mt-4 w-full bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700 transition-colors flex items-center justify-center"
+                    onClick={() => navigate(`/donate/donation-form/${profile._id}`)}
+                  >
+                    <Heart className="h-4 w-4 mr-2" /> Support {profile.studentName}
+                  </button>
                 </div>
-                <button
-                  className="mt-4 w-full bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700 transition-colors flex items-center justify-center"
-                  onClick={() =>
-                    navigate(`/donate/donation-form/${profile.id}`)
-                  } // Correct usage of profile.id here
-                >
-                  <Heart className="h-4 w-4 mr-2" /> Support{" "}
-                  {profile.studentName}
-                </button>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
