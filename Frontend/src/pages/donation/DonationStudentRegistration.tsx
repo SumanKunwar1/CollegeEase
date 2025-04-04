@@ -30,38 +30,11 @@ export default function StudentRegistration() {
     setIsSubmitting(true);
     
     try {
-      // Client-side validation
-      if (!formData.email || !formData.password || !formData.fullName || 
-          !formData.cause || !formData.description || !formData.amountNeeded) {
+      // Basic validation
+      if (!formData.email || !formData.password || !formData.fullName) {
         toast.error('Please fill all required fields');
         setIsSubmitting(false);
         return;
-      }
-      
-      if (files.length === 0) {
-        toast.error('Please upload at least one document');
-        setIsSubmitting(false);
-        return;
-      }
-      
-      if (files.length > 3) {
-        toast.error('Maximum 3 files allowed');
-        setIsSubmitting(false);
-        return;
-      }
-
-      // Check file sizes
-      for (const file of files) {
-        if (file.size > 5 * 1024 * 1024) {
-          toast.error(`File ${file.name} is too large (max 5MB)`);
-          setIsSubmitting(false);
-          return;
-        }
-        if (file.type !== 'application/pdf') {
-          toast.error(`File ${file.name} must be a PDF`);
-          setIsSubmitting(false);
-          return;
-        }
       }
 
       const formDataToSend = new FormData();
@@ -83,36 +56,17 @@ export default function StudentRegistration() {
           headers: {
             "Content-Type": "multipart/form-data",
           },
-          timeout: 60000, // Increased timeout to 60 seconds
-          onUploadProgress: (progressEvent) => {
-            if (progressEvent.total) {
-              const percentCompleted = Math.round(
-                (progressEvent.loaded * 100) / progressEvent.total
-              );
-              console.log(`Upload progress: ${percentCompleted}%`);
-            }
-          }
         }
       );
       
       if (response.data.success) {
         toast.success("Registration successful!");
-        navigate("/donate/student-dashboard");
-      } else {
-        toast.error(response.data.message || "Registration completed but with warnings");
+        // Navigate to dashboard with student ID
+        navigate(`/donate/student-dashboard/${response.data.studentId}`);
       }
-    } catch (error: any) {
-      console.error("Full registration error:", error);
-      
-      if (error.code === 'ECONNABORTED') {
-        toast.error("Request timed out. Please try again.");
-      } else if (error.response) {
-        toast.error(error.response.data.message || "Registration failed");
-      } else if (error.request) {
-        toast.error("No response from server. Please check your connection.");
-      } else {
-        toast.error("An unexpected error occurred");
-      }
+    } catch (error) {
+      console.error("Registration error:", error);
+      toast.error("Registration failed. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -159,7 +113,6 @@ export default function StudentRegistration() {
               <div className="flex items-center space-x-4 bg-gray-50 p-3 rounded-lg">
                 <BookOpen className="h-5 w-5 text-blue-600" />
                 <select
-                  required
                   className="w-full bg-transparent focus:outline-none"
                   value={formData.cause}
                   onChange={(e) => setFormData({...formData, cause: e.target.value})}
@@ -175,7 +128,6 @@ export default function StudentRegistration() {
               <div className="flex items-center space-x-4 bg-gray-50 p-3 rounded-lg">
                 <FileText className="h-5 w-5 text-blue-600" />
                 <textarea
-                  required
                   placeholder="Description of Need"
                   rows={3}
                   className="w-full bg-transparent focus:outline-none"
@@ -189,7 +141,6 @@ export default function StudentRegistration() {
                 <DollarSign className="h-5 w-5 text-blue-600" />
                 <input
                   type="number"
-                  required
                   placeholder="Amount Needed ($)"
                   min="0"
                   step="0.01"

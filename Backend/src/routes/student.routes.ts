@@ -1,13 +1,10 @@
 import express from 'express';
-import { registerStudent } from '../controllers/student.controller';
-import { handleFileUpload, cleanupUploads } from '../middlewares/studentUpload.middleware';
+import { registerStudent, getStudentDashboard } from '../controllers/student.controller';
+import { handleFileUpload } from '../middlewares/studentUpload.middleware';
 
 const router = express.Router();
 
-router.post('/register', 
-  handleFileUpload,
-  cleanupUploads,
-  registerStudent
-);
+router.post('/register', handleFileUpload, registerStudent);
+router.get('/dashboard/:id', getStudentDashboard);
 
 export default router;

@@ -219,7 +219,7 @@ function AppContent() {
           <Route path="/donate/donation-form/:id" element={<DonationForm />} />
           <Route path="/donate/student-login" element={<StudentLogin />} />
           <Route
-            path="/donate/student-dashboard"
+            path="/donate/student-dashboard/:id"
             element={<StudentDashboard />}
           />
           <Route
