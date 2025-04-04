@@ -122,3 +122,51 @@ export const getStudentDashboard = async (req: Request, res: Response): Promise<
     res.status(500).json({ success: false, message: 'Failed to fetch dashboard' });
   }
 };
+
+export const getAllStudents = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const students = await Student.find().select('-password');
+    res.status(200).json(students);
+  } catch (error) {
+    console.error('Error fetching students:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch students' });
+  }
+};
+
+export const updateStudentStatus = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { ids, status } = req.body;
+    
+    await Student.updateMany(
+      { _id: { $in: ids } },
+      { $set: { status } }
+    );
+    
+    res.status(200).json({ success: true, message: 'Status updated successfully' });
+  } catch (error) {
+    console.error('Error updating status:', error);
+    res.status(500).json({ success: false, message: 'Failed to update status' });
+  }
+};
+
+export const deleteStudents = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { ids } = req.body;
+    
+    // Optional: Delete associated documents from filesystem
+    const students = await Student.find({ _id: { $in: ids } });
+    for (const student of students) {
+      for (const doc of student.documents) {
+        const filePath = path.join(__dirname, '../../public', doc);
+        await fs.remove(filePath).catch(err => console.error('Error deleting file:', err));
+      }
+    }
+    
+    await Student.deleteMany({ _id: { $in: ids } });
+    
+    res.status(200).json({ success: true, message: 'Students deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting students:', error);
+    res.status(500).json({ success: false, message: 'Failed to delete students' });
+  }
+};
