@@ -30,17 +30,15 @@ export default function StudentRegistration() {
     setIsSubmitting(true);
     
     try {
-      // Basic validation
       if (!formData.email || !formData.password || !formData.fullName) {
         toast.error('Please fill all required fields');
-        setIsSubmitting(false);
         return;
       }
 
       const formDataToSend = new FormData();
       formDataToSend.append("email", formData.email);
       formDataToSend.append("fullName", formData.fullName);
-      formDataToSend.append("cause", formData.cause);
+      formDataToSend.append("cause", formData.cause || "General");
       formDataToSend.append("description", formData.description);
       formDataToSend.append("amountNeeded", formData.amountNeeded);
       formDataToSend.append("password", formData.password);
@@ -51,22 +49,15 @@ export default function StudentRegistration() {
 
       const response = await axios.post(
         `${import.meta.env.VITE_API_BASE_URL}/students/register`,
-        formDataToSend,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        }
+        formDataToSend
       );
       
       if (response.data.success) {
         toast.success("Registration successful!");
-        // Navigate to dashboard with student ID
-        navigate(`/donate/student-dashboard/${response.data.studentId}`);
+        navigate(`/donate/student-dashboard/${response.data.student.fullName}`);
       }
     } catch (error) {
-      console.error("Registration error:", error);
-      toast.error("Registration failed. Please try again.");
+      toast.error("Registration failed");
     } finally {
       setIsSubmitting(false);
     }
@@ -78,12 +69,10 @@ export default function StudentRegistration() {
         <div className="p-8">
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold text-blue-600 mb-2">Student Registration</h1>
-            <p className="text-gray-600">Register to receive support for your educational needs.</p>
           </div>
           
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-4">
-              {/* Email */}
               <div className="flex items-center space-x-4 bg-gray-50 p-3 rounded-lg">
                 <Mail className="h-5 w-5 text-blue-600" />
                 <input
@@ -96,7 +85,6 @@ export default function StudentRegistration() {
                 />
               </div>
 
-              {/* Full Name */}
               <div className="flex items-center space-x-4 bg-gray-50 p-3 rounded-lg">
                 <User className="h-5 w-5 text-blue-600" />
                 <input
@@ -109,7 +97,6 @@ export default function StudentRegistration() {
                 />
               </div>
 
-              {/* Cause */}
               <div className="flex items-center space-x-4 bg-gray-50 p-3 rounded-lg">
                 <BookOpen className="h-5 w-5 text-blue-600" />
                 <select
@@ -124,11 +111,10 @@ export default function StudentRegistration() {
                 </select>
               </div>
 
-              {/* Description */}
               <div className="flex items-center space-x-4 bg-gray-50 p-3 rounded-lg">
                 <FileText className="h-5 w-5 text-blue-600" />
                 <textarea
-                  placeholder="Description of Need"
+                  placeholder="Description"
                   rows={3}
                   className="w-full bg-transparent focus:outline-none"
                   value={formData.description}
@@ -136,21 +122,17 @@ export default function StudentRegistration() {
                 />
               </div>
 
-              {/* Amount Needed */}
               <div className="flex items-center space-x-4 bg-gray-50 p-3 rounded-lg">
                 <DollarSign className="h-5 w-5 text-blue-600" />
                 <input
                   type="number"
                   placeholder="Amount Needed ($)"
-                  min="0"
-                  step="0.01"
                   className="w-full bg-transparent focus:outline-none"
                   value={formData.amountNeeded}
                   onChange={(e) => setFormData({...formData, amountNeeded: e.target.value})}
                 />
               </div>
 
-              {/* File Upload */}
               <div className="flex items-center space-x-4 bg-gray-50 p-3 rounded-lg">
                 <Upload className="h-5 w-5 text-blue-600" />
                 <input
@@ -161,13 +143,7 @@ export default function StudentRegistration() {
                   multiple
                 />
               </div>
-              {files.length > 0 && (
-                <div className="text-sm text-gray-500">
-                  Selected files: {files.map(f => f.name).join(', ')}
-                </div>
-              )}
 
-              {/* Password */}
               <div className="flex items-center space-x-4 bg-gray-50 p-3 rounded-lg">
                 <User className="h-5 w-5 text-blue-600" />
                 <input
@@ -181,20 +157,12 @@ export default function StudentRegistration() {
               </div>
             </div>
 
-            {/* Submit Button */}
             <button
               type="submit"
-              className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition duration-300 flex items-center justify-center"
+              className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700"
               disabled={isSubmitting}
             >
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Registering...
-                </>
-              ) : (
-                "Register"
-              )}
+              {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Register"}
             </button>
           </form>
         </div>

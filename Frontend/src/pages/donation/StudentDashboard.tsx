@@ -48,18 +48,16 @@ type Donation = {
   donorId: string;
   amount: number;
   date: string;
-  // Add other donation properties as needed
 }
 
 type Donor = {
   id: string;
   fullName: string;
   organization?: string;
-  // Add other donor properties as needed
 }
 
 export default function StudentDashboard() {
-  const { id } = useParams()
+  const { name } = useParams()
   const [student, setStudent] = useState<any>(null)
   const [donations, setDonations] = useState<Donation[]>([])
   const [donors, setDonors] = useState<Donor[]>([])
@@ -68,33 +66,40 @@ export default function StudentDashboard() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Fetch student data
-        const studentResponse = await axios.get(
-          `${import.meta.env.VITE_API_BASE_URL}/students/dashboard/${id}`
-        )
-        
-        if (studentResponse.data.success) {
-          setStudent(studentResponse.data.student)
+        // Check if ID exists before making the request
+        if (!name) {
+          console.error("No student ID provided");
+          return;
         }
 
-        // In a real app, you would fetch donations and donors from your API
-        // For now, we'll use mock data similar to your original implementation
+        // Fetch student data
+        const studentResponse = await axios.get(
+          `${import.meta.env.VITE_API_BASE_URL}/students/dashboard/${name}`
+        );
+        
+        if (studentResponse.data.success) {
+          setStudent(studentResponse.data.student);
+        } else {
+          console.error("Failed to fetch student data");
+        }
+
+        // Mock donations data
         const mockDonations: Donation[] = [
           {
             id: "1",
-            studentId: id || "",
+            studentId: name,
             donorId: "1",
-            amount: 5,
+            amount: 500,
             date: new Date().toISOString()
           },
           {
             id: "2",
-            studentId: id || "",
+            studentId: name,
             donorId: "2",
-            amount: 3,
+            amount: 300,
             date: new Date(Date.now() - 86400000).toISOString()
           }
-        ]
+        ];
 
         const mockDonors: Donor[] = [
           {
@@ -107,20 +112,20 @@ export default function StudentDashboard() {
             fullName: "Jane Smith",
             organization: "XYZ Charity"
           }
-        ]
+        ];
 
-        setDonations(mockDonations)
-        setDonors(mockDonors)
+        setDonations(mockDonations);
+        setDonors(mockDonors);
 
       } catch (error) {
-        console.error("Failed to fetch data:", error)
+        console.error("Failed to fetch data:", error);
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
+    };
 
-    fetchData()
-  }, [id])
+    fetchData();
+  }, [name]);
 
   if (loading) {
     return (
@@ -135,6 +140,7 @@ export default function StudentDashboard() {
       <div className="min-h-screen bg-gradient-to-r from-blue-50 to-blue-150 flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-red-500">Student data not found</h1>
+          <p className="mt-2 text-gray-600">Please check if the student ID is correct</p>
         </div>
       </div>
     )
