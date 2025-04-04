@@ -1,13 +1,24 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { Heart, DollarSign, CreditCard } from "lucide-react";
-import { donation } from "../../data/donations";
 import emailjs from "@emailjs/browser";
 import { jsPDF } from "jspdf";
 
 const predefinedAmounts = [10, 25, 50, 100, 250, 500];
 
 type PaymentMethod = "visa" | "paypal" | null;
+
+interface StudentProfile {
+  _id: string;
+  studentName: string;
+  financialNeeds: string;
+  academicHistory: string;
+  goals: string;
+  raised: number;
+  goal: number;
+  image: string;
+  story?: string;
+}
 
 const DonationForm = () => {
   const { id } = useParams();
@@ -24,9 +35,28 @@ const DonationForm = () => {
   const [cvv, setCvv] = useState("");
   const [expiryDate, setExpiryDate] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
+  const [studentProfile, setStudentProfile] = useState<StudentProfile | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  // Find the student profile based on the ID
-  const studentProfile = donation.find((profile) => profile.id === id);
+  // Fetch student profile from API
+  useEffect(() => {
+    const fetchStudentProfile = async () => {
+      try {
+        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/student-profiles/${id}`);
+        if (!response.ok) {
+          throw new Error('Failed to fetch student profile');
+        }
+        const data = await response.json();
+        setStudentProfile(data);
+      } catch (error) {
+        console.error("Error fetching student profile:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStudentProfile();
+  }, [id]);
 
   // Calculate tax benefit (50% of donation amount)
   const taxBenefit = (selectedAmount || Number(customAmount) || 0) * 0.5;
@@ -174,8 +204,26 @@ const DonationForm = () => {
       // Process card payment (mock)
       await new Promise((resolve) => setTimeout(resolve, 1500));
 
-      // Update the student's raised amount
-      studentProfile.raised += donationAmount;
+      // Update the student's raised amount via API
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/student-profiles/${studentProfile._id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          raised: studentProfile.raised + donationAmount
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update student profile');
+      }
+
+      // Update local state with new raised amount
+      setStudentProfile({
+        ...studentProfile,
+        raised: studentProfile.raised + donationAmount
+      });
 
       // Send confirmation email
       await sendConfirmationEmail();
@@ -204,6 +252,10 @@ const DonationForm = () => {
       setIsProcessing(false);
     }
   };
+
+  if (loading) {
+    return <div className="text-center p-8">Loading student profile...</div>;
+  }
 
   if (!studentProfile) {
     return <div className="text-center p-8">Student profile not found</div>;
