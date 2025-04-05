@@ -131,7 +131,7 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
 
   const handleLogout = () => {
     // Implement logout logic here
-    navigate("/login");
+    navigate("/");
   };
 
   const handleChangePassword = () => {
