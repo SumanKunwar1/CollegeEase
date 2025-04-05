@@ -11,7 +11,6 @@ import {
   DollarSign,
   Calendar,
   CreditCard,
-  Building,
   Loader2
 } from "lucide-react"
 import axios from "axios"
@@ -43,82 +42,56 @@ const StatusBadge = ({ status }: { status: 'pending' | 'approved' | 'rejected' }
 }
 
 type Donation = {
-  id: string;
-  studentId: string;
-  donorId: string;
+  _id: string;
   amount: number;
-  date: string;
-}
+  createdAt: string;
+  donorName?: string;
+  isAnonymous: boolean;
+  paymentMethod: string;
+};
 
-type Donor = {
-  id: string;
+type Student = {
+  _id: string;
   fullName: string;
-  organization?: string;
-}
+  email: string;
+  cause: string;
+  description: string;
+  amountNeeded: number;
+  status: 'pending' | 'approved' | 'rejected';
+  createdAt: string;
+};
 
 export default function StudentDashboard() {
   const { name } = useParams()
-  const [student, setStudent] = useState<any>(null)
+  const [student, setStudent] = useState<Student | null>(null)
   const [donations, setDonations] = useState<Donation[]>([])
-  const [donors, setDonors] = useState<Donor[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Check if ID exists before making the request
         if (!name) {
-          console.error("No student ID provided");
-          return;
+          throw new Error("No student name provided");
         }
 
-        // Fetch student data
-        const studentResponse = await axios.get(
+        setLoading(true);
+        setError(null);
+
+        // Fetch student data with donations
+        const response = await axios.get(
           `${import.meta.env.VITE_API_BASE_URL}/students/dashboard/${name}`
         );
         
-        if (studentResponse.data.success) {
-          setStudent(studentResponse.data.student);
+        if (response.data.success) {
+          setStudent(response.data.student);
+          setDonations(response.data.donations || []);
         } else {
-          console.error("Failed to fetch student data");
+          throw new Error(response.data.message || "Failed to fetch student data");
         }
-
-        // Mock donations data
-        const mockDonations: Donation[] = [
-          {
-            id: "1",
-            studentId: name,
-            donorId: "1",
-            amount: 500,
-            date: new Date().toISOString()
-          },
-          {
-            id: "2",
-            studentId: name,
-            donorId: "2",
-            amount: 300,
-            date: new Date(Date.now() - 86400000).toISOString()
-          }
-        ];
-
-        const mockDonors: Donor[] = [
-          {
-            id: "1",
-            fullName: "John Doe",
-            organization: "ABC Foundation"
-          },
-          {
-            id: "2",
-            fullName: "Jane Smith",
-            organization: "XYZ Charity"
-          }
-        ];
-
-        setDonations(mockDonations);
-        setDonors(mockDonors);
-
       } catch (error) {
         console.error("Failed to fetch data:", error);
+        setError(error instanceof Error ? error.message : "Failed to fetch data");
       } finally {
         setLoading(false);
       }
@@ -135,20 +108,30 @@ export default function StudentDashboard() {
     )
   }
 
-  if (!student) {
+  if (error) {
     return (
       <div className="min-h-screen bg-gradient-to-r from-blue-50 to-blue-150 flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-red-500">Student data not found</h1>
-          <p className="mt-2 text-gray-600">Please check if the student ID is correct</p>
+          <h1 className="text-2xl font-bold text-red-500">Error loading dashboard</h1>
+          <p className="mt-2 text-gray-600">{error}</p>
         </div>
       </div>
     )
   }
 
-  // Calculate total amount received
-  const totalReceived = donations.reduce((sum, donation) => sum + donation.amount, 0)
-  const progressPercentage = Math.min((totalReceived / student.amountNeeded) * 100, 100)
+  if (!student) {
+    return (
+      <div className="min-h-screen bg-gradient-to-r from-blue-50 to-blue-150 flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-red-500">Student data not found</h1>
+          <p className="mt-2 text-gray-600">Please check if the student name is correct</p>
+        </div>
+      </div>
+    )
+  }
+
+  const totalReceived = donations.reduce((sum, donation) => sum + donation.amount, 0);
+  const progressPercentage = Math.min((totalReceived / student.amountNeeded) * 100, 100);
 
   return (
     <div className="min-h-screen bg-gradient-to-r from-blue-50 to-blue-150 p-6">
@@ -212,6 +195,21 @@ export default function StudentDashboard() {
             </div>
           </div>
 
+          <div className="grid grid-cols-2 gap-4 mb-6">
+            <div className="bg-blue-50 p-4 rounded-lg">
+              <h3 className="text-sm font-medium text-blue-800">Total Donations</h3>
+              <p className="text-2xl font-bold text-blue-600">
+                ${totalReceived.toFixed(2)}
+              </p>
+            </div>
+            <div className="bg-green-50 p-4 rounded-lg">
+              <h3 className="text-sm font-medium text-green-800">Donations Count</h3>
+              <p className="text-2xl font-bold text-green-600">
+                {donations.length}
+              </p>
+            </div>
+          </div>
+
           {donations.length > 0 ? (
             <div className="overflow-hidden shadow ring-1 ring-black ring-opacity-5 sm:rounded-lg">
               <table className="min-w-full divide-y divide-gray-300">
@@ -224,7 +222,7 @@ export default function StudentDashboard() {
                       Donor
                     </th>
                     <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
-                      Organization
+                      Payment Method
                     </th>
                     <th scope="col" className="px-3 py-3.5 text-right text-sm font-semibold text-gray-900">
                       Amount
@@ -232,37 +230,34 @@ export default function StudentDashboard() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200 bg-white">
-                  {donations.map((donation) => {
-                    const donor = donors.find((d) => d.id === donation.donorId)
-
-                    return (
-                      <tr key={donation.id}>
-                        <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm text-gray-900 sm:pl-6">
-                          <div className="flex items-center">
-                            <Calendar className="h-4 w-4 text-blue-600 mr-2" />
-                            {new Date(donation.date).toLocaleDateString()}
-                          </div>
-                        </td>
-                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                          <div className="flex items-center">
-                            <User className="h-4 w-4 text-blue-600 mr-2" />
-                            {donor?.fullName || "Anonymous"}
-                          </div>
-                        </td>
-                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                          <div className="flex items-center">
-                            <Building className="h-4 w-4 text-blue-600 mr-2" />
-                            {donor?.organization || "N/A"}
-                          </div>
-                        </td>
-                        <td className="whitespace-nowrap px-3 py-4 text-sm text-right font-medium text-green-600">
-                          <div className="flex items-center justify-end">
-                            <CreditCard className="h-4 w-4 text-green-600 mr-2" />${donation.amount.toFixed(2)}
-                          </div>
-                        </td>
-                      </tr>
-                    )
-                  })}
+                  {donations.map((donation) => (
+                    <tr key={donation._id}>
+                      <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm text-gray-900 sm:pl-6">
+                        <div className="flex items-center">
+                          <Calendar className="h-4 w-4 text-blue-600 mr-2" />
+                          {new Date(donation.createdAt).toLocaleDateString()}
+                        </div>
+                      </td>
+                      <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                        <div className="flex items-center">
+                          <User className="h-4 w-4 text-blue-600 mr-2" />
+                          {donation.isAnonymous ? "Anonymous" : donation.donorName || "Anonymous"}
+                        </div>
+                      </td>
+                      <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                        <div className="flex items-center">
+                          <CreditCard className="h-4 w-4 text-blue-600 mr-2" />
+                          {donation.paymentMethod === 'paypal' ? 'PayPal' : 'Credit Card'}
+                        </div>
+                      </td>
+                      <td className="whitespace-nowrap px-3 py-4 text-sm text-right font-medium text-green-600">
+                        <div className="flex items-center justify-end">
+                          <DollarSign className="h-4 w-4 text-green-600 mr-2" />
+                          ${donation.amount.toFixed(2)}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
                 </tbody>
                 <tfoot>
                   <tr className="bg-gray-50">

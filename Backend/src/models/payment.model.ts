@@ -4,6 +4,7 @@ export interface IPayment extends Document {
   orderId: string;
   paymentId?: string;
   studentProfileId: mongoose.Types.ObjectId;
+  studentName: string; // Add this field to store student name directly
   amount: number;
   donorEmail: string;
   donorName?: string;
@@ -23,6 +24,7 @@ const paymentSchema = new mongoose.Schema<IPayment>(
       required: true,
       ref: 'StudentProfile' 
     },
+    studentName: { type: String, required: true }, // Add this field
     amount: { type: Number, required: true },
     donorEmail: { type: String, required: true },
     donorName: { type: String },

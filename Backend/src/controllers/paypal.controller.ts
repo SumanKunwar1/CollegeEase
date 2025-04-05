@@ -61,6 +61,12 @@ export const createOrder = async (req: Request, res: Response): Promise<Response
   try {
     const { amount, studentProfileId, donorEmail, donorName, isAnonymous } = req.body;
 
+    // Add this to fetch the student profile
+    const studentProfile = await StudentProfile.findById(studentProfileId);
+    if (!studentProfile) {
+      return res.status(404).json({ error: 'Student profile not found' });
+    }
+
     const accessToken = await getPayPalAccessToken();
     const response: AxiosResponse<PayPalOrderResponse> = await axios.post(
       `${PAYPAL_API_BASE}/v2/checkout/orders`,
@@ -71,7 +77,7 @@ export const createOrder = async (req: Request, res: Response): Promise<Response
             currency_code: 'USD',
             value: amount.toString(),
           },
-          description: `Education Donation`,
+          description: `Education Donation for ${studentProfile.studentName}`,
         }],
       },
       {
@@ -82,26 +88,26 @@ export const createOrder = async (req: Request, res: Response): Promise<Response
       }
     );
 
-    // Save payment record
-    await Payment.create({
-      orderId: response.data.id,
-      studentProfileId,
-      amount,
-      donorEmail,
-      donorName: isAnonymous ? undefined : donorName,
-      isAnonymous,
-      paymentMethod: 'paypal',
-      status: 'pending'
-    });
 
-    return res.json({ orderId: response.data.id });
+  // Create payment record with studentName
+  await Payment.create({
+    orderId: response.data.id,
+    studentProfileId,
+    studentName: studentProfile.studentName, // Now studentProfile is defined
+    amount,
+    donorEmail,
+    donorName: isAnonymous ? undefined : donorName,
+    isAnonymous,
+    paymentMethod: 'paypal',
+    status: 'pending'
+  });
 
-  } catch (error) {
-    console.error('PayPal create order error:', error);
-    return res.status(500).json({ error: 'Failed to create PayPal order' });
-  }
+  return res.json({ orderId: response.data.id });
+} catch (error) {
+  console.error('PayPal create order error:', error);
+  return res.status(500).json({ error: 'Failed to create PayPal order' });
+}
 };
-
 // Capture PayPal payment
 export const capturePayment = async (req: Request, res: Response): Promise<Response> => {
   try {

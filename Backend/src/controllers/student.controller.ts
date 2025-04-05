@@ -3,6 +3,7 @@ import Student from '../models/student.model';
 import path from 'path';
 import fs from 'fs-extra';
 import { v4 as uuidv4 } from 'uuid';
+import Payment from '../models/payment.model';
 
 export const registerStudent = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -115,8 +116,18 @@ export const getStudentDashboard = async (req: Request, res: Response): Promise<
       res.status(404).json({ success: false, message: 'Student not found' });
       return;
     }
-    
-    res.status(200).json({ success: true, student });
+
+    // Get donations directly by student name
+    const donations = await Payment.find({ 
+      studentName: req.params.name,
+      status: 'completed' 
+    }).sort({ createdAt: -1 });
+
+    res.status(200).json({ 
+      success: true, 
+      student,
+      donations 
+    });
   } catch (error) {
     console.error('Dashboard error:', error);
     res.status(500).json({ success: false, message: 'Failed to fetch dashboard' });
@@ -170,3 +181,4 @@ export const deleteStudents = async (req: Request, res: Response): Promise<void>
     res.status(500).json({ success: false, message: 'Failed to delete students' });
   }
 };
+
