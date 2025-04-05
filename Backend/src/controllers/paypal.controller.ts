@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import axios, { AxiosResponse } from 'axios';
 import Payment from '../models/payment.model';
+import StudentProfile from '../models/studentProfile.model';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -128,6 +129,13 @@ export const capturePayment = async (req: Request, res: Response): Promise<Respo
     payment.paymentId = response.data.id;
     payment.status = 'completed';
     await payment.save();
+    
+    // Update student's raised amount
+    await StudentProfile.findByIdAndUpdate(
+      payment.studentProfileId,
+      { $inc: { raised: payment.amount } },
+      { new: true }
+    );
 
     return res.json({ 
       success: true, 

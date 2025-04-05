@@ -76,86 +76,86 @@ const DonationForm = () => {
     }
   };
 
-  const generateReceipt = () => {
-    const doc = new jsPDF();
-    const date = new Date().toLocaleDateString();
+  // In DonationForm.tsx, update the generateReceipt function:
+const generateReceipt = () => {
+  const doc = new jsPDF();
+  const date = new Date().toLocaleDateString();
 
-    // Add a header with a larger font
-    doc.setFontSize(24);
-    doc.setTextColor(44, 62, 80);
-    doc.text("Donation Receipt", 105, 20, { align: "center" });
+  // Set default font
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(24);
+  doc.setTextColor(44, 62, 80);
+  doc.text("Donation Receipt", 105, 20, { align: "center" });
 
-    // Add a horizontal line
-    doc.setDrawColor(52, 73, 94);
-    doc.line(20, 25, 190, 25);
+  // Add a horizontal line
+  doc.setDrawColor(52, 73, 94);
+  doc.line(20, 25, 190, 25);
 
-    // Reset text color to black
-    doc.setTextColor(0, 0, 0);
+  // Reset text color to black
+  doc.setTextColor(0, 0, 0);
 
-    // Add receipt details with better formatting
-    doc.setFontSize(12);
-    const startY = 40;
-    const lineHeight = 10;
+  // Add receipt details with better formatting
+  doc.setFontSize(12);
+  const startY = 40;
+  const lineHeight = 10;
 
-    // Receipt Details
-    doc.setFont("bold");
-    doc.text("Receipt Details:", 20, startY);
-    doc.setFont("normal");
+  // Receipt Details
+  doc.setFont("helvetica", "bold");
+  doc.text("Receipt Details:", 20, startY);
+  doc.setFont("helvetica", "normal");
 
-    doc.text(`Date: ${date}`, 20, startY + lineHeight);
-    doc.text(
-      `Donor: ${isAnonymous ? "Anonymous" : `${firstName} ${lastName}`}`,
-      20,
-      startY + lineHeight * 2
-    );
-    doc.text(`Email: ${email}`, 20, startY + lineHeight * 3);
+  doc.text(`Date: ${date}`, 20, startY + lineHeight);
+  doc.text(
+    `Donor: ${isAnonymous ? "Anonymous" : `${firstName} ${lastName}`}`,
+    20,
+    startY + lineHeight * 2
+  );
+  doc.text(`Email: ${email}`, 20, startY + lineHeight * 3);
 
-    // Financial Details
-    doc.setFont("bold");
-    doc.text("Financial Information:", 20, startY + lineHeight * 5);
-    doc.setFont("normal");
+  // Financial Details
+  doc.setFont("helvetica", "bold");
+  doc.text("Financial Information:", 20, startY + lineHeight * 5);
+  doc.setFont("helvetica", "normal");
 
-    doc.text(
-      `Donation Amount: $${(selectedAmount || Number(customAmount)).toFixed(
-        2
-      )}`,
-      20,
-      startY + lineHeight * 6
-    );
-    doc.text(
-      `Tax Benefit (50%): $${taxBenefit.toFixed(2)}`,
-      20,
-      startY + lineHeight * 7
-    );
+  doc.text(
+    `Donation Amount: $${(selectedAmount || Number(customAmount)).toFixed(2)}`,
+    20,
+    startY + lineHeight * 6
+  );
+  doc.text(
+    `Tax Benefit (50%): $${taxBenefit.toFixed(2)}`,
+    20,
+    startY + lineHeight * 7
+  );
 
-    // Recipient Details
-    doc.setFont("bold");
-    doc.text("Recipient Information:", 20, startY + lineHeight * 9);
-    doc.setFont("normal");
+  // Recipient Details
+  doc.setFont("helvetica", "bold");
+  doc.text("Recipient Information:", 20, startY + lineHeight * 9);
+  doc.setFont("helvetica", "normal");
 
-    doc.text(
-      `Student: ${studentProfile?.studentName}`,
-      20,
-      startY + lineHeight * 10
-    );
+  doc.text(
+    `Student: ${studentProfile?.studentName}`,
+    20,
+    startY + lineHeight * 10
+  );
 
-    // Thank you message
-    doc.setFont("italic");
-    doc.text(
-      "Thank you for your generous contribution to support education!",
-      20,
-      startY + lineHeight * 12
-    );
+  // Thank you message
+  doc.setFont("helvetica", "italic");
+  doc.text(
+    "Thank you for your generous contribution to support education!",
+    20,
+    startY + lineHeight * 12
+  );
 
-    // Footer with additional information
-    doc.setFontSize(10);
-    doc.setTextColor(128, 128, 128);
-    doc.text("This receipt is valid for tax purposes.", 105, 250, {
-      align: "center",
-    });
+  // Footer with additional information
+  doc.setFontSize(10);
+  doc.setTextColor(128, 128, 128);
+  doc.text("This receipt is valid for tax purposes.", 105, 250, {
+    align: "center",
+  });
 
-    return doc.output("datauristring");
-  };
+  return doc.output("datauristring");
+};
 
   const sendConfirmationEmail = async () => {
     if (!email) return;
@@ -212,117 +212,130 @@ const DonationForm = () => {
     }
   };
 
-  const onApprovePayPalOrder = async (data: { orderID: string }): Promise<void> => {
-    setIsProcessing(true);
-    setPaypalError(null);
-    
-    try {
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/payments/paypal/capture-payment`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          orderId: data.orderID,
-        }),
-      });
+  // In DonationForm.tsx, update the onApprovePayPalOrder function:
+const onApprovePayPalOrder = async (data: { orderID: string }): Promise<void> => {
+  setIsProcessing(true);
+  setPaypalError(null);
+  
+  try {
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/payments/paypal/capture-payment`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        orderId: data.orderID,
+      }),
+    });
 
-      const result = await response.json();
-      if (!response.ok) throw new Error(result.error || 'Payment capture failed');
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error || 'Payment capture failed');
 
-      // Update student's raised amount in frontend
-      if (studentProfile) {
-        const donationAmount = selectedAmount || Number(customAmount);
-        setStudentProfile({
-          ...studentProfile,
-          raised: studentProfile.raised + donationAmount,
-        });
-      }
-
-      // Send confirmation email
-      await sendConfirmationEmail();
-
-      alert(
-        `Thank you for your donation of $${selectedAmount || customAmount} to support ${studentProfile?.studentName}!`
-      );
-
-      // Reset form
-      setCustomAmount("");
-      setSelectedAmount(null);
-      setFirstName("");
-      setLastName("");
-      setEmail("");
-      setMessage("");
-      setIsAnonymous(false);
-      setPaymentMethod(null);
-    } catch (error) {
-      console.error('Payment failed:', error);
-      setPaypalError(error instanceof Error ? error.message : 'Payment failed. Please try again.');
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  const handleCardSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const donationAmount = selectedAmount || Number(customAmount);
-
-    if (!studentProfile || !donationAmount) return;
-
-    setIsProcessing(true);
-
-    try {
-      // Process card payment (mock)
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-
-      // Update the student's raised amount via API
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/student-profiles/${studentProfile._id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          raised: studentProfile.raised + donationAmount
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to update student profile');
-      }
-
-      // Update local state with new raised amount
+    // Update student's raised amount in frontend
+    if (studentProfile) {
+      const donationAmount = selectedAmount || Number(customAmount);
       setStudentProfile({
         ...studentProfile,
-        raised: studentProfile.raised + donationAmount
+        raised: studentProfile.raised + donationAmount,
       });
-
-      // Send confirmation email
-      await sendConfirmationEmail();
-
-      // Show success message
-      alert(
-        `Thank you for your donation of $${donationAmount} to support ${studentProfile.studentName}!`
-      );
-
-      // Reset form
-      setCustomAmount("");
-      setSelectedAmount(null);
-      setFirstName("");
-      setLastName("");
-      setEmail("");
-      setMessage("");
-      setIsAnonymous(false);
-      setPaymentMethod(null);
-      setCardNumber("");
-      setCvv("");
-      setExpiryDate("");
-    } catch (error) {
-      console.error("Payment failed:", error);
-      alert("Payment failed. Please try again.");
-    } finally {
-      setIsProcessing(false);
     }
-  };
+
+    // Send confirmation email
+    try {
+      await sendConfirmationEmail();
+    } catch (emailError) {
+      console.error("Failed to send email:", emailError);
+      // Don't fail the whole process if email fails
+    }
+
+    alert(
+      `Thank you for your donation of $${selectedAmount || customAmount} to support ${studentProfile?.studentName}!`
+    );
+
+    // Reset form
+    setCustomAmount("");
+    setSelectedAmount(null);
+    setFirstName("");
+    setLastName("");
+    setEmail("");
+    setMessage("");
+    setIsAnonymous(false);
+    setPaymentMethod(null);
+
+    // Return a resolved promise to tell PayPal the processing is complete
+    return Promise.resolve();
+
+  } catch (error) {
+    console.error('Payment failed:', error);
+    setPaypalError(error instanceof Error ? error.message : 'Payment failed. Please try again.');
+    // Return a rejected promise to tell PayPal the processing failed
+    return Promise.reject(error);
+  } finally {
+    setIsProcessing(false);
+  }
+};
+
+  // In DonationForm.tsx, update the handleCardSubmit function:
+const handleCardSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  const donationAmount = selectedAmount || Number(customAmount);
+
+  if (!studentProfile || !donationAmount) return;
+
+  setIsProcessing(true);
+
+  try {
+    // Process card payment (mock)
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+
+    // Update the student's raised amount via API
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/student-profiles/${studentProfile._id}/raised`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        amount: donationAmount
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to update student profile');
+    }
+
+    // Update local state with new raised amount
+    setStudentProfile({
+      ...studentProfile,
+      raised: studentProfile.raised + donationAmount
+    });
+
+    // Send confirmation email
+    await sendConfirmationEmail();
+
+    // Show success message
+    alert(
+      `Thank you for your donation of $${donationAmount} to support ${studentProfile.studentName}!`
+    );
+
+    // Reset form
+    setCustomAmount("");
+    setSelectedAmount(null);
+    setFirstName("");
+    setLastName("");
+    setEmail("");
+    setMessage("");
+    setIsAnonymous(false);
+    setPaymentMethod(null);
+    setCardNumber("");
+    setCvv("");
+    setExpiryDate("");
+  } catch (error) {
+    console.error("Payment failed:", error);
+    alert("Payment failed. Please try again.");
+  } finally {
+    setIsProcessing(false);
+  }
+};
 
   if (loading) {
     return <div className="text-center p-8">Loading student profile...</div>;
@@ -611,6 +624,6 @@ const DonationForm = () => {
       </div>
     </div>
   );
-};
+}
 
 export default DonationForm;
