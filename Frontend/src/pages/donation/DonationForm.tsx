@@ -3,6 +3,7 @@ import { useParams } from "react-router-dom";
 import { Heart, DollarSign, CreditCard } from "lucide-react";
 import emailjs from "@emailjs/browser";
 import { jsPDF } from "jspdf";
+import { PayPalScriptProvider, PayPalButtons } from "@paypal/react-paypal-js";
 
 const predefinedAmounts = [10, 25, 50, 100, 250, 500];
 
@@ -37,6 +38,7 @@ const DonationForm = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [studentProfile, setStudentProfile] = useState<StudentProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [paypalError, setPaypalError] = useState<string | null>(null);
 
   // Fetch student profile from API
   useEffect(() => {
@@ -162,8 +164,8 @@ const DonationForm = () => {
       const receipt = generateReceipt();
 
       await emailjs.send(
-        "service_recg1uu", // Replace with your EmailJS service ID
-        "template_5lx1kua", // Replace with your EmailJS template ID
+        "service_recg1uu",
+        "template_5lx1kua",
         {
           email: email,
           donor_name: isAnonymous
@@ -174,7 +176,7 @@ const DonationForm = () => {
           student_name: studentProfile?.studentName,
           receipt_pdf: receipt,
         },
-        "cbtW2UZLaGDkiRscO" // Replace with your EmailJS public key
+        "cbtW2UZLaGDkiRscO"
       );
     } catch (error) {
       console.error("Failed to send email:", error);
@@ -182,12 +184,86 @@ const DonationForm = () => {
     }
   };
 
-  const handlePayPalRedirect = () => {
-    // Replace with your PayPal integration
-    window.open("https://www.paypal.com", "_blank");
+  // PayPal integration functions
+  const createPayPalOrder = async (): Promise<string> => {
+    try {
+      const donationAmount = selectedAmount || Number(customAmount);
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/payments/paypal/create-order`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          amount: donationAmount,
+          studentProfileId: id,
+          donorEmail: email,
+          donorName: isAnonymous ? undefined : `${firstName} ${lastName}`,
+          isAnonymous,
+        }),
+      });
+      
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Failed to create PayPal order');
+      
+      return data.orderId;
+    } catch (error) {
+      console.error('Error creating PayPal order:', error);
+      throw error;
+    }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const onApprovePayPalOrder = async (data: { orderID: string }): Promise<void> => {
+    setIsProcessing(true);
+    setPaypalError(null);
+    
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/payments/paypal/capture-payment`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          orderId: data.orderID,
+        }),
+      });
+
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || 'Payment capture failed');
+
+      // Update student's raised amount in frontend
+      if (studentProfile) {
+        const donationAmount = selectedAmount || Number(customAmount);
+        setStudentProfile({
+          ...studentProfile,
+          raised: studentProfile.raised + donationAmount,
+        });
+      }
+
+      // Send confirmation email
+      await sendConfirmationEmail();
+
+      alert(
+        `Thank you for your donation of $${selectedAmount || customAmount} to support ${studentProfile?.studentName}!`
+      );
+
+      // Reset form
+      setCustomAmount("");
+      setSelectedAmount(null);
+      setFirstName("");
+      setLastName("");
+      setEmail("");
+      setMessage("");
+      setIsAnonymous(false);
+      setPaymentMethod(null);
+    } catch (error) {
+      console.error('Payment failed:', error);
+      setPaypalError(error instanceof Error ? error.message : 'Payment failed. Please try again.');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleCardSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const donationAmount = selectedAmount || Number(customAmount);
 
@@ -196,11 +272,6 @@ const DonationForm = () => {
     setIsProcessing(true);
 
     try {
-      if (paymentMethod === "paypal") {
-        handlePayPalRedirect();
-        return;
-      }
-
       // Process card payment (mock)
       await new Promise((resolve) => setTimeout(resolve, 1500));
 
@@ -299,7 +370,7 @@ const DonationForm = () => {
               </div>
             </div>
 
-            <form ref={formRef} onSubmit={handleSubmit} className="space-y-6">
+            <form ref={formRef} onSubmit={handleCardSubmit} className="space-y-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Select donation amount
@@ -420,6 +491,31 @@ const DonationForm = () => {
                 </div>
               )}
 
+              {paymentMethod === "paypal" && (
+                <div className="mt-4">
+                  <PayPalScriptProvider 
+                    options={{ 
+                      "clientId": "AWhqA1mohaLgdQ7Jse7vZihI2qRans1KvJMlwBYKHeH-ceS-fDMvjhIzVRrJ0Kf75_-Z_4m03dVOfA5b",
+                      currency: "USD",
+                    }}
+                  >
+                    <PayPalButtons
+                      style={{ layout: "vertical" }}
+                      createOrder={createPayPalOrder}
+                      onApprove={onApprovePayPalOrder}
+                      onError={(err) => {
+                        console.error("PayPal error:", err);
+                        setPaypalError("There was an error with PayPal. Please try another payment method.");
+                      }}
+                      disabled={!selectedAmount && !customAmount}
+                    />
+                  </PayPalScriptProvider>
+                  {paypalError && (
+                    <p className="mt-2 text-sm text-red-600">{paypalError}</p>
+                  )}
+                </div>
+              )}
+
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -490,11 +586,14 @@ const DonationForm = () => {
 
               <button
                 type="submit"
-                className="w-full bg-indigo-600 text-white py-3 px-4 rounded-md hover:bg-indigo-700 transition-colors flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+                className={`w-full bg-indigo-600 text-white py-3 px-4 rounded-md hover:bg-indigo-700 transition-colors flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed ${
+                  paymentMethod === "paypal" ? "hidden" : ""
+                }`}
                 disabled={
                   (!selectedAmount && !customAmount) ||
                   isProcessing ||
-                  !paymentMethod
+                  !paymentMethod ||
+                  paymentMethod === "paypal"
                 }
               >
                 {isProcessing ? (

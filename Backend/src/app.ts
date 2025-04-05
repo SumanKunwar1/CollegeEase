@@ -21,6 +21,8 @@ import scholarshipApplicationRouter from './routes/scholarshipApplication.routes
 import successStoryRouter from './routes/successStory.routes';
 import studentRouter from './routes/student.routes';
 import studentProfileRouter from './routes/studentProfile.routes';
+import paymentRouter from './routes/paypal.routes';
+
 
 
 
@@ -77,6 +79,8 @@ app.use('/api/v1/scholarship-applications', scholarshipApplicationRouter);
 app.use('/api/v1/success-stories', successStoryRouter);
 app.use('/api/v1/students', studentRouter);
 app.use('/api/v1/student-profiles', studentProfileRouter);
+app.use('/api/v1/payments', paymentRouter);
+
 
 
 
