@@ -48,3 +48,14 @@ export const deleteMentor = async (req: Request, res: Response) => {
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
+export const getMentorById = async (req: Request, res: Response) => {
+    try {
+      const mentor = await Mentor.findById(req.params.id);
+      if (!mentor) {
+        return res.status(404).json({ message: 'Mentor not found' });
+      }
+      res.json(mentor);
+    } catch (error) {
+      res.status(500).json({ message: 'Server error' });
+    }
+  };

@@ -1,28 +1,23 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { mentorData } from "../../data/findmentor"; // Importing mentor data
+import axios from "axios";
 
 const BookSession = () => {
-  const { id } = useParams(); // Get mentor ID from URL
+  const { id: mentorId } = useParams();
   const navigate = useNavigate();
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  // Get the selected mentor based on ID
-  const mentor = mentorData.id === id ? mentorData : null;
-
-  // State for booking details
   const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    phone: "",
+    studentName: "",
+    studentEmail: "",
     date: "",
     time: "",
     notes: "",
   });
 
   const handleInputChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
-    >
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
@@ -31,29 +26,34 @@ const BookSession = () => {
     }));
   };
 
-  if (!mentor) {
-    return (
-      <div className="text-center py-20 text-red-500">Mentor not found.</div>
-    );
-  }
+  const handleSubmit = async () => {
+    if (!isFormValid()) return;
 
-  const handleSubmit = () => {
-    alert(
-      `Session booked with ${mentor.name}\n\n` +
-        `Name: ${formData.name}\n` +
-        `Email: ${formData.email}\n` +
-        `Phone: ${formData.phone}\n` +
-        `Date: ${formData.date}\n` +
-        `Time: ${formData.time}\n` +
-        `Notes: ${formData.notes}`
-    );
+    setIsLoading(true);
+    setError("");
+
+    try {
+      const apiClient = axios.create({
+        baseURL: import.meta.env.VITE_API_BASE_URL,
+      });
+
+      const response = await apiClient.post(`/mentors/${mentorId}/bookings`, formData);
+
+      // Show success message and redirect
+      alert("Booking successful!");
+      navigate(`/mentorship/find-mentor/${mentorId}`);
+    } catch (err) {
+      setError("Failed to book session. Please try again.");
+      console.error("Booking error:", err);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const isFormValid = () => {
     return (
-      formData.name &&
-      formData.email &&
-      formData.phone &&
+      formData.studentName &&
+      formData.studentEmail &&
       formData.date &&
       formData.time
     );
@@ -63,71 +63,44 @@ const BookSession = () => {
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100 p-6">
       <div className="bg-white p-8 rounded-xl shadow-lg max-w-lg w-full">
         <h2 className="text-2xl font-bold text-gray-900 text-center mb-4">
-          Book a Session with {mentor.name}
+          Book a Session
         </h2>
-        <div className="flex items-center space-x-4 mb-6">
-          <img
-            src={mentor.imageUrl}
-            alt={mentor.name}
-            className="w-16 h-16 rounded-full object-cover"
-          />
-          <div>
-            <p className="text-lg font-semibold">{mentor.title}</p>
-            <p className="text-gray-600">{mentor.university}</p>
-            <p className="text-blue-600 font-semibold">
-              ${mentor.pricePerHour}/hour
-            </p>
+
+        {error && (
+          <div className="mb-4 p-2 bg-red-100 text-red-700 rounded">
+            {error}
           </div>
-        </div>
+        )}
 
         <div className="space-y-4">
-          {/* Personal Information */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Full Name *
+              Your Name *
             </label>
             <input
               type="text"
-              name="name"
-              value={formData.name}
+              name="studentName"
+              value={formData.studentName}
               onChange={handleInputChange}
               className="w-full p-2 border rounded-md"
-              placeholder="Enter your full name"
               required
             />
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Email Address *
+              Your Email *
             </label>
             <input
               type="email"
-              name="email"
-              value={formData.email}
+              name="studentEmail"
+              value={formData.studentEmail}
               onChange={handleInputChange}
               className="w-full p-2 border rounded-md"
-              placeholder="Enter your email"
               required
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Phone Number *
-            </label>
-            <input
-              type="tel"
-              name="phone"
-              value={formData.phone}
-              onChange={handleInputChange}
-              className="w-full p-2 border rounded-md"
-              placeholder="Enter your phone number"
-              required
-            />
-          </div>
-
-          {/* Session Details */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Select Date *
@@ -139,6 +112,7 @@ const BookSession = () => {
               onChange={handleInputChange}
               className="w-full p-2 border rounded-md"
               required
+              min={new Date().toISOString().split('T')[0]}
             />
           </div>
 
@@ -174,26 +148,27 @@ const BookSession = () => {
               onChange={handleInputChange}
               className="w-full p-2 border rounded-md"
               rows={3}
-              placeholder="Any specific topics or questions you'd like to discuss?"
+              placeholder="Any specific topics or questions?"
             />
           </div>
         </div>
 
         <button
           onClick={handleSubmit}
-          disabled={!isFormValid()}
+          disabled={!isFormValid() || isLoading}
           className={`mt-6 w-full py-2 rounded-lg transition ${
-            isFormValid()
+            isFormValid() && !isLoading
               ? "bg-blue-600 hover:bg-blue-700 text-white"
               : "bg-gray-300 cursor-not-allowed text-gray-500"
           }`}
         >
-          Confirm Booking
+          {isLoading ? 'Booking...' : 'Confirm Booking'}
         </button>
 
         <button
           onClick={() => navigate(-1)}
           className="mt-3 w-full text-gray-600 border py-2 rounded-lg hover:bg-gray-100 transition"
+          disabled={isLoading}
         >
           Cancel
         </button>
