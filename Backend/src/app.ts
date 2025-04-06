@@ -23,6 +23,8 @@ import studentRouter from './routes/student.routes';
 import studentProfileRouter from './routes/studentProfile.routes';
 import paymentRouter from './routes/paypal.routes';
 import donationSuccessStoryRouter from './routes/donationSuccessStory.routes';
+import mentorRouter from './routes/mentor.routes';
+
 
 
 
@@ -83,8 +85,7 @@ app.use('/api/v1/students', studentRouter);
 app.use('/api/v1/student-profiles', studentProfileRouter);
 app.use('/api/v1/payments', paymentRouter);
 app.use('/api/v1/donation-success-stories', donationSuccessStoryRouter);
-
-
+app.use('/api/v1/mentors', mentorRouter);
 
 
 

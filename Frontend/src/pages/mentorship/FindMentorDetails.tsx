@@ -3,7 +3,6 @@ import {
   GraduationCap,
   Clock,
   DollarSign,
-  MessageCircle,
   BookOpen,
   Star,
 } from "lucide-react";
@@ -117,10 +116,7 @@ function FindMentorDetails() {
                 >
                   Book Session
                 </button>
-                <button className="w-full border-2 border-blue-600 text-blue-600 py-3 rounded-lg font-semibold hover:bg-blue-50 transition flex items-center justify-center gap-2">
-                  <MessageCircle className="w-5 h-5" />
-                  Send Message
-                </button>
+                
               </div>
             </div>
 
