@@ -27,6 +27,9 @@ import mentorRouter from './routes/mentor.routes';
 import bookingRouter from './routes/booking.routes';
 import becameMentorRouter from './routes/becameMentor.routes';
 import groupSessionRouter from './routes/groupSession.routes';
+import groupPaymentRouter from './routes/groupPayment.routes';
+
+
 
 dotenv.config();
 
@@ -87,7 +90,7 @@ app.use('/api/v1/mentors', mentorRouter);
 app.use('/api/v1', bookingRouter);
 app.use('/api/v1/became-mentor', becameMentorRouter);
 app.use('/api/v1/group-sessions', groupSessionRouter);
-
+app.use('/api/v1/payments', groupPaymentRouter);
 
 // Error handling
 app.use(errorHandler);

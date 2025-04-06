@@ -4,7 +4,8 @@ import {
   getGroupSessionById, 
   createGroupSession, 
   updateGroupSession, 
-  deleteGroupSession 
+  deleteGroupSession, 
+  registerForSession
 } from '../controllers/groupSession.controller';
 import { asyncHandler } from '../utils/asyncHandler';
 
@@ -15,5 +16,7 @@ router.get('/:id', asyncHandler(getGroupSessionById));
 router.post('/', asyncHandler(createGroupSession));
 router.put('/:id', asyncHandler(updateGroupSession));
 router.delete('/:id', asyncHandler(deleteGroupSession));
+router.post('/:id/register', asyncHandler(registerForSession));
+
 
 export default router;

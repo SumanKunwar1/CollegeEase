@@ -78,3 +78,29 @@ export const deleteGroupSession = async (req: Request, res: Response) => {
     res.status(500).json({ message: 'Error deleting group session', error });
   }
 };
+// Add this to your existing controller
+export const registerForSession = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const registrationData = req.body;
+
+    // In a real app, you would:
+    // 1. Validate the registration data
+    // 2. Process payment (or create payment intent)
+    // 3. Save registration to database
+    // 4. Send confirmation email
+
+    // For now, we'll just return a success response
+    res.status(201).json({
+      success: true,
+      message: 'Registration successful',
+      sessionId: id,
+      registration: registrationData
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      message: 'Error processing registration', 
+      error 
+    });
+  }
+};
