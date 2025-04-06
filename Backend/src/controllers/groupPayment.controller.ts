@@ -58,13 +58,6 @@ export const createGroupOrder = async (req: Request, res: Response): Promise<Res
   try {
     const { groupSessionId, firstName, lastName, email, phone } = req.body;
 
-    if (!groupSessionId || !firstName || !lastName || !email || !phone) {
-      return res.status(400).json({ 
-        success: false,
-        error: 'Missing required fields' 
-      });
-    }
-
     const groupSession = await GroupSession.findById(groupSessionId);
     if (!groupSession) {
       return res.status(404).json({ 
@@ -96,7 +89,7 @@ export const createGroupOrder = async (req: Request, res: Response): Promise<Res
       }
     );
 
-    const payment = await GroupPayment.create({
+    await GroupPayment.create({
       orderId: response.data.id,
       groupSessionId,
       title: groupSession.title,
@@ -111,8 +104,7 @@ export const createGroupOrder = async (req: Request, res: Response): Promise<Res
 
     return res.json({ 
       success: true,
-      orderId: payment.orderId,
-      amount: payment.amount
+      orderId: response.data.id 
     });
   } catch (error) {
     console.error('PayPal create order error:', error);
@@ -126,13 +118,6 @@ export const createGroupOrder = async (req: Request, res: Response): Promise<Res
 export const captureGroupPayment = async (req: Request, res: Response): Promise<Response> => {
   try {
     const { orderId } = req.body;
-
-    if (!orderId) {
-      return res.status(400).json({ 
-        success: false,
-        error: 'Order ID is required' 
-      });
-    }
 
     const payment = await GroupPayment.findOne({ orderId });
     if (!payment) {
@@ -160,7 +145,7 @@ export const captureGroupPayment = async (req: Request, res: Response): Promise<
 
     return res.json({ 
       success: true, 
-      paymentId: payment.paymentId,
+      paymentId: response.data.id,
       amount: payment.amount,
       message: 'Payment successfully captured'
     });
@@ -177,49 +162,6 @@ export const captureGroupPayment = async (req: Request, res: Response): Promise<
       success: false,
       error: 'Payment capture failed',
       message: 'The payment could not be processed'
-    });
-  }
-};
-
-export const verifyGroupPayment = async (req: Request, res: Response): Promise<Response> => {
-  try {
-    const { paymentId, orderId } = req.query;
-
-    if (!paymentId || !orderId) {
-      return res.status(400).json({
-        success: false,
-        error: 'Missing paymentId or orderId parameters'
-      });
-    }
-
-    const payment = await GroupPayment.findOne({
-      paymentId,
-      orderId,
-      status: 'completed'
-    });
-
-    if (!payment) {
-      return res.status(404).json({
-        success: false,
-        error: 'Payment not found or not completed'
-      });
-    }
-
-    return res.json({
-      success: true,
-      payment: {
-        id: payment._id,
-        amount: payment.amount,
-        status: payment.status,
-        createdAt: payment.createdAt
-      }
-    });
-
-  } catch (error) {
-    console.error('Payment verification error:', error);
-    return res.status(500).json({
-      success: false,
-      error: 'Payment verification failed'
     });
   }
 };

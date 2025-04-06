@@ -1,18 +1,86 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Calendar, Clock, Users, Star } from "lucide-react";
-import { useNavigate, useParams } from "react-router-dom"; // Import useParams
+import { useNavigate, useParams } from "react-router-dom";
+import axios from "axios";
 
-import { sessions } from "../../data/groupsession";
+// Configure axios to use the base URL from environment variables
+const apiClient = axios.create({
+  baseURL: import.meta.env.VITE_API_BASE_URL,
+});
+
+interface SessionFeature {
+  title: string;
+  description: string;
+  icon: string;
+}
+
+interface SessionReview {
+  author: string;
+  text: string;
+  rating: number;
+}
+
+interface GroupSession {
+  _id: string;
+  title: string;
+  mentor: string;
+  date: string;
+  time: string;
+  duration: string;
+  participants: number;
+  price: string;
+  tags: string[];
+  imageUrl: string;
+  description: string;
+  features: SessionFeature[];
+  reviews: SessionReview[];
+}
 
 const GroupSessionDetails: React.FC = () => {
-  const { id } = useParams(); // Use useParams to get the session id from the URL
-
-  // Find the session by id
-  const session = sessions.find((session) => session.id === parseInt(id!));
+  const { id } = useParams();
+  const [session, setSession] = useState<GroupSession | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
 
+  useEffect(() => {
+    const fetchSession = async () => {
+      try {
+        const response = await apiClient.get(`/group-sessions/${id}`);
+        setSession(response.data);
+        setIsLoading(false);
+      } catch (err) {
+        console.error("Error fetching session:", err);
+        setError("Failed to load session details. Please try again later.");
+        setIsLoading(false);
+      }
+    };
+
+    fetchSession();
+  }, [id]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <p>Loading session details...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <p className="text-red-500">{error}</p>
+      </div>
+    );
+  }
+
   if (!session) {
-    return <div>Session not found</div>; // In case the session doesn't exist
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <p>Session not found</p>
+      </div>
+    );
   }
 
   const {
@@ -29,6 +97,21 @@ const GroupSessionDetails: React.FC = () => {
     features,
     reviews,
   } = session;
+
+  const getIconComponent = (iconName: string) => {
+    switch (iconName) {
+      case "Users":
+        return Users;
+      case "Calendar":
+        return Calendar;
+      case "Clock":
+        return Clock;
+      case "Star":
+        return Star;
+      default:
+        return Users;
+    }
+  };
 
   return (
     <section className="py-16 bg-gray-50">
@@ -79,7 +162,7 @@ const GroupSessionDetails: React.FC = () => {
                 </span>
                 <button
                   onClick={() =>
-                    navigate(`/mentorship/group-session/${session.id}/register`)
+                    navigate(`/mentorship/group-session/${id}/register`)
                   }
                   className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors duration-200"
                 >
@@ -100,18 +183,21 @@ const GroupSessionDetails: React.FC = () => {
           <div className="border-t border-gray-200 p-6">
             <h4 className="text-xl font-semibold mb-6">Session Features</h4>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {features.map((feature, index) => (
-                <div
-                  key={index}
-                  className="flex flex-col items-center text-center"
-                >
-                  <div className="p-3 bg-blue-100 rounded-lg mb-4">
-                    <feature.icon className="h-6 w-6 text-blue-600" />
+              {features.map((feature, index) => {
+                const IconComponent = getIconComponent(feature.icon);
+                return (
+                  <div
+                    key={index}
+                    className="flex flex-col items-center text-center"
+                  >
+                    <div className="p-3 bg-blue-100 rounded-lg mb-4">
+                      <IconComponent className="h-6 w-6 text-blue-600" />
+                    </div>
+                    <h5 className="font-semibold mb-2">{feature.title}</h5>
+                    <p className="text-gray-600 text-sm">{feature.description}</p>
                   </div>
-                  <h5 className="font-semibold mb-2">{feature.title}</h5>
-                  <p className="text-gray-600 text-sm">{feature.description}</p>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
 

@@ -44,7 +44,7 @@ import BookSession from "./pages/mentorship/BookASession";
 import GroupSessionDetails from "./pages/mentorship/GroupSessionDetails";
 import GroupSessions from "./pages/mentorship/GroupSession";
 import GroupRegistrationForm from "./pages/mentorship/GroupRegistrationForm";
-import GroupRegistrationSuccess from "./pages/mentorship/GroupSessionRegistrationSuccess";
+import GroupSessionRegistrationSuccess from "./pages/mentorship/GroupSessionRegistrationSuccess";
 import Resources from "./pages/mentorship/Resources";
 import GroupSessionsFeedback from "./pages/mentorship/GroupSessionFeedback";
 
@@ -258,7 +258,7 @@ function AppContent() {
           />
           <Route
             path="/registration-success"
-            element={<GroupRegistrationSuccess />}
+            element={<GroupSessionRegistrationSuccess />}
           />
           <Route path="/mentorship/resources" element={<Resources />} />
           <Route
