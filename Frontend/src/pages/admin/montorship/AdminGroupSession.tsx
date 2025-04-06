@@ -1,7 +1,7 @@
 "use client";
 
 import type React from "react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Calendar,
   Clock,
@@ -17,12 +17,18 @@ import { Button } from "../../../components/ui/button";
 import { Card, CardContent } from "../../../components/ui/card";
 import { Input } from "../../../components/ui/input";
 import { Textarea } from "../../../components/ui/textarea";
-import { useToast } from "../../../components/ui/use-toast";
+import { useEnhancedToast } from "../../../components/ui/enhanced-toast";
+import axios from "axios";
+
+// Configure axios to use the base URL from environment variables
+const apiClient = axios.create({
+  baseURL: import.meta.env.VITE_API_BASE_URL,
+});
 
 interface SessionFeature {
   title: string;
   description: string;
-  icon: React.FC<{ className?: string }>;
+  icon: string;
 }
 
 interface SessionReview {
@@ -32,7 +38,7 @@ interface SessionReview {
 }
 
 interface GroupSession {
-  id: number;
+  _id: string;
   title: string;
   mentor: string;
   date: string;
@@ -48,14 +54,13 @@ interface GroupSession {
 }
 
 export function AdminGroupSessionsPage() {
-  const { toast } = useToast();
+  const { toast } = useEnhancedToast();
   const [searchQuery, setSearchQuery] = useState("");
   const [showAddForm, setShowAddForm] = useState(false);
-  const [editingSession, setEditingSession] = useState<GroupSession | null>(
-    null
-  );
+  const [editingSession, setEditingSession] = useState<GroupSession | null>(null);
+  const [sessions, setSessions] = useState<GroupSession[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Mock icons for features
   const featureIcons = {
     Users: Users,
     Calendar: Calendar,
@@ -63,115 +68,7 @@ export function AdminGroupSessionsPage() {
     Star: Star,
   };
 
-  const [sessions, setSessions] = useState<GroupSession[]>([
-    {
-      id: 1,
-      title: "College Application Strategy Workshop",
-      mentor: "Dr. Sarah Johnson",
-      date: "November 15, 2023",
-      time: "4:00 PM - 6:00 PM EST",
-      duration: "2 hours",
-      participants: 20,
-      price: "$49.99",
-      tags: ["College Applications", "Strategy", "Admissions"],
-      imageUrl:
-        "https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&q=80&w=800",
-      description:
-        "Join Dr. Johnson for a comprehensive workshop on developing a winning college application strategy. Learn how to highlight your strengths, select the right schools, and craft compelling personal statements.",
-      features: [
-        {
-          title: "Interactive Format",
-          description:
-            "Engage in real-time with the mentor and other participants",
-          icon: Users,
-        },
-        {
-          title: "Take-Home Resources",
-          description: "Receive worksheets and templates to continue your work",
-          icon: Calendar,
-        },
-        {
-          title: "Q&A Session",
-          description: "Get your specific questions answered by an expert",
-          icon: Clock,
-        },
-        {
-          title: "Recording Access",
-          description: "Rewatch the session for 30 days after the event",
-          icon: Star,
-        },
-      ],
-      reviews: [
-        {
-          author: "Michael Chen",
-          text: "This workshop completely changed my approach to college applications. Dr. Johnson provided insights I hadn't found anywhere else.",
-          rating: 5,
-        },
-        {
-          author: "Jessica Rodriguez",
-          text: "The interactive format made this so much more valuable than just watching videos. Highly recommend!",
-          rating: 4,
-        },
-        {
-          author: "David Kim",
-          text: "Worth every penny. I feel much more confident about my application strategy now.",
-          rating: 5,
-        },
-      ],
-    },
-    {
-      id: 2,
-      title: "Essay Writing Masterclass",
-      mentor: "Professor Robert Williams",
-      date: "November 22, 2023",
-      time: "5:00 PM - 7:30 PM EST",
-      duration: "2.5 hours",
-      participants: 15,
-      price: "$59.99",
-      tags: ["Essay Writing", "Personal Statement", "Admissions"],
-      imageUrl:
-        "https://images.unsplash.com/photo-1501504905252-473c47e087f8?auto=format&fit=crop&q=80&w=800",
-      description:
-        "Craft a compelling personal statement that stands out to admissions committees. Professor Williams will guide you through the entire process from brainstorming to final edits.",
-      features: [
-        {
-          title: "Personalized Feedback",
-          description:
-            "Submit your essay outline for review during the session",
-          icon: Users,
-        },
-        {
-          title: "Example Analysis",
-          description: "Study successful essays from past applicants",
-          icon: Calendar,
-        },
-        {
-          title: "Writing Exercises",
-          description: "Practice techniques with guided prompts",
-          icon: Clock,
-        },
-        {
-          title: "Follow-up Resources",
-          description: "Access to editing checklist and style guide",
-          icon: Star,
-        },
-      ],
-      reviews: [
-        {
-          author: "Emily Patel",
-          text: "Professor Williams' insights transformed my essay from good to outstanding. The examples he shared were incredibly helpful.",
-          rating: 5,
-        },
-        {
-          author: "James Wilson",
-          text: "The writing exercises helped me break through my writer's block. Great session!",
-          rating: 4,
-        },
-      ],
-    },
-  ]);
-
-  const [newSession, setNewSession] = useState<Omit<GroupSession, "id">>({
+  const [newSession, setNewSession] = useState<Omit<GroupSession, "_id">>({
     title: "",
     mentor: "",
     date: "",
@@ -185,6 +82,26 @@ export function AdminGroupSessionsPage() {
     features: [],
     reviews: [],
   });
+
+  useEffect(() => {
+    const fetchSessions = async () => {
+      try {
+        const response = await apiClient.get("/group-sessions");
+        setSessions(response.data);
+        setIsLoading(false);
+      } catch (error) {
+        console.error("Error fetching sessions:", error);
+        toast({
+          title: "Error",
+          description: "Failed to fetch group sessions",
+          variant: "destructive",
+        });
+        setIsLoading(false);
+      }
+    };
+
+    fetchSessions();
+  }, []);
 
   const filteredSessions = sessions.filter(
     (session) =>
@@ -238,28 +155,19 @@ export function AdminGroupSessionsPage() {
       const featuresArray = JSON.parse(e.target.value);
 
       if (Array.isArray(featuresArray)) {
-        // Convert icon strings to actual icon components
-        const processedFeatures = featuresArray.map((feature) => ({
-          ...feature,
-          icon:
-            featureIcons[feature.icon as keyof typeof featureIcons] || Users,
-        }));
-
         if (editingSession) {
           setEditingSession({
             ...editingSession,
-            features: processedFeatures,
+            features: featuresArray,
           });
         } else {
           setNewSession({
             ...newSession,
-            features: processedFeatures,
+            features: featuresArray,
           });
         }
       }
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (error) {
-      // If JSON parsing fails, don't update the state
       console.error("Invalid JSON format for features");
     }
   };
@@ -281,83 +189,114 @@ export function AdminGroupSessionsPage() {
           });
         }
       }
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (error) {
-      // If JSON parsing fails, don't update the state
       console.error("Invalid JSON format for reviews");
     }
   };
 
-  const handleAddSession = () => {
-    const id =
-      sessions.length > 0 ? Math.max(...sessions.map((s) => s.id)) + 1 : 1;
-    const sessionToAdd = { id, ...newSession };
+  const handleAddSession = async () => {
+    try {
+      const response = await apiClient.post("/group-sessions", newSession);
+      setSessions([...sessions, response.data]);
+      setNewSession({
+        title: "",
+        mentor: "",
+        date: "",
+        time: "",
+        duration: "",
+        participants: 0,
+        price: "",
+        tags: [],
+        imageUrl: "",
+        description: "",
+        features: [],
+        reviews: [],
+      });
+      setShowAddForm(false);
 
-    setSessions([...sessions, sessionToAdd]);
-    setNewSession({
-      title: "",
-      mentor: "",
-      date: "",
-      time: "",
-      duration: "",
-      participants: 0,
-      price: "",
-      tags: [],
-      imageUrl: "",
-      description: "",
-      features: [],
-      reviews: [],
-    });
-    setShowAddForm(false);
-
-    toast({
-      title: "Session added",
-      description: "The group session has been added successfully.",
-    });
+      toast({
+        title: "Session added",
+        description: "The group session has been added successfully.",
+      });
+    } catch (error) {
+      console.error("Error adding session:", error);
+      toast({
+        title: "Error",
+        description: "Failed to add group session",
+        variant: "destructive",
+      });
+    }
   };
 
-  const handleUpdateSession = () => {
+  const handleUpdateSession = async () => {
     if (!editingSession) return;
 
-    setSessions(
-      sessions.map((session) =>
-        session.id === editingSession.id ? editingSession : session
-      )
-    );
-    setEditingSession(null);
+    try {
+      const response = await apiClient.put(
+        `/group-sessions/${editingSession._id}`,
+        editingSession
+      );
+      setSessions(
+        sessions.map((session) =>
+          session._id === editingSession._id ? response.data : session
+        )
+      );
+      setEditingSession(null);
 
-    toast({
-      title: "Session updated",
-      description: "The group session has been updated successfully.",
-    });
+      toast({
+        title: "Session updated",
+        description: "The group session has been updated successfully.",
+      });
+    } catch (error) {
+      console.error("Error updating session:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update group session",
+        variant: "destructive",
+      });
+    }
   };
 
-  const handleDeleteSession = (id: number) => {
-    setSessions(sessions.filter((session) => session.id !== id));
+  const handleDeleteSession = async (id: string) => {
+    try {
+      await apiClient.delete(`/group-sessions/${id}`);
+      setSessions(sessions.filter((session) => session._id !== id));
 
-    toast({
-      title: "Session deleted",
-      description: "The group session has been deleted successfully.",
-    });
+      toast({
+        title: "Session deleted",
+        description: "The group session has been deleted successfully.",
+      });
+    } catch (error) {
+      console.error("Error deleting session:", error);
+      toast({
+        title: "Error",
+        description: "Failed to delete group session",
+        variant: "destructive",
+      });
+    }
   };
 
-  // Helper function to prepare features for JSON editing
   const prepareFeatures = (features: SessionFeature[]) => {
     return features.map((feature) => {
-      // Convert icon component to string name
-      const iconName =
-        Object.keys(featureIcons).find(
-          (key) =>
-            featureIcons[key as keyof typeof featureIcons] === feature.icon
-        ) || "Users";
-
       return {
         title: feature.title,
         description: feature.description,
-        icon: iconName,
+        icon: feature.icon,
       };
     });
   };
+
+  const getIconComponent = (iconName: string) => {
+    return featureIcons[iconName as keyof typeof featureIcons] || Users;
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-6 flex items-center justify-center">
+        <p>Loading sessions...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
@@ -377,7 +316,6 @@ export function AdminGroupSessionsPage() {
           </div>
         </div>
 
-        {/* Search */}
         <div className="mb-8">
           <div className="relative">
             <Search className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
@@ -391,7 +329,6 @@ export function AdminGroupSessionsPage() {
           </div>
         </div>
 
-        {/* Add/Edit Form */}
         {(showAddForm || editingSession) && (
           <Card className="mb-8">
             <CardContent className="p-6">
@@ -601,7 +538,6 @@ export function AdminGroupSessionsPage() {
           </Card>
         )}
 
-        {/* Sessions List */}
         <div className="space-y-6 mb-8">
           {filteredSessions.length === 0 ? (
             <div className="text-center py-8">
@@ -611,7 +547,7 @@ export function AdminGroupSessionsPage() {
             </div>
           ) : (
             filteredSessions.map((session) => (
-              <Card key={session.id} className="overflow-hidden">
+              <Card key={session._id} className="overflow-hidden">
                 <CardContent className="p-0">
                   <div className="flex flex-col md:flex-row">
                     <div className="md:w-1/3">
@@ -671,7 +607,7 @@ export function AdminGroupSessionsPage() {
                           <Button
                             variant="destructive"
                             size="sm"
-                            onClick={() => handleDeleteSession(session.id)}
+                            onClick={() => handleDeleteSession(session._id)}
                           >
                             <Trash className="mr-2 h-4 w-4" />
                             Delete
@@ -684,22 +620,6 @@ export function AdminGroupSessionsPage() {
               </Card>
             ))
           )}
-        </div>
-
-        <div className="sticky bottom-6 bg-white p-4 rounded-lg shadow-lg border flex justify-end">
-          <Button
-            onClick={() =>
-              toast({
-                title: "Changes saved",
-                description:
-                  "All group sessions have been updated successfully.",
-              })
-            }
-            className="w-full md:w-auto"
-          >
-            <Save className="mr-2 h-4 w-4" />
-            Save All Changes
-          </Button>
         </div>
       </div>
     </div>

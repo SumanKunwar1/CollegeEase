@@ -26,10 +26,7 @@ import donationSuccessStoryRouter from './routes/donationSuccessStory.routes';
 import mentorRouter from './routes/mentor.routes';
 import bookingRouter from './routes/booking.routes';
 import becameMentorRouter from './routes/becameMentor.routes';
-
-
-
-
+import groupSessionRouter from './routes/groupSession.routes';
 
 dotenv.config();
 
@@ -89,8 +86,7 @@ app.use('/api/v1/donation-success-stories', donationSuccessStoryRouter);
 app.use('/api/v1/mentors', mentorRouter);
 app.use('/api/v1', bookingRouter);
 app.use('/api/v1/became-mentor', becameMentorRouter);
-
-
+app.use('/api/v1/group-sessions', groupSessionRouter);
 
 
 // Error handling
