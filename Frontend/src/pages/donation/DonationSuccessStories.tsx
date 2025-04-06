@@ -1,43 +1,59 @@
 import { Quote, GraduationCap, Heart, ArrowRight } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import { useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+
+interface DonationSuccessStory {
+  _id: string;
+  name: string;
+  image: string;
+  university: string;
+  major: string;
+  amountRaised: number;
+  quote: string;
+  impact: string[];
+}
 
 const SuccessStories = () => {
   const navigate = useNavigate();
-  const stories = [
-    {
-      id: 1,
-      name: "Emily Thompson",
-      image:
-        "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?ixlib=rb-1.2.1&auto=format&fit=crop&w=256&q=80",
-      university: "Harvard University",
-      major: "Environmental Science",
-      amountRaised: 45000,
-      quote:
-        "Thanks to the generous support of donors, I was able to pursue my dream of studying environmental science. Now, I'm working on innovative solutions for climate change.",
-      impact: [
-        "First in family to attend college",
-        "Published research paper in first year",
-        "Started environmental awareness club",
-      ],
-    },
-    {
-      id: 2,
-      name: "Marcus Johnson",
-      image:
-        "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?ixlib=rb-1.2.1&auto=format&fit=crop&w=256&q=80",
-      university: "MIT",
-      major: "Computer Science",
-      amountRaised: 35000,
-      quote:
-        "The support I received didn't just fund my education - it opened doors to opportunities I never thought possible. I'm now developing AI solutions that help other students learn.",
-      impact: [
-        "Developed educational app for underserved communities",
-        "Internship at major tech company",
-        "Mentors high school students in coding",
-      ],
-    },
-  ];
+  const [stories, setStories] = useState<DonationSuccessStory[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchStories = async () => {
+      try {
+        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/donation-success-stories`);
+        if (!response.ok) {
+          throw new Error('Failed to fetch stories');
+        }
+        const data = await response.json();
+        setStories(data.data);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Unknown error occurred');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStories();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 pt-20 flex items-center justify-center">
+        <div>Loading success stories...</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 pt-20 flex items-center justify-center">
+        <div className="text-red-500">Error: {error}</div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 pt-20">
@@ -52,7 +68,7 @@ const SuccessStories = () => {
         <div className="grid gap-8 lg:grid-cols-2 mb-12">
           {stories.map((story) => (
             <div
-              key={story.id}
+              key={story._id}
               className="bg-white rounded-lg shadow-lg overflow-hidden"
             >
               <div className="p-6">

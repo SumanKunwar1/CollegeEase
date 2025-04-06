@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useParams } from "react-router-dom";
-import { Heart, DollarSign, CreditCard } from "lucide-react";
+import { Heart, DollarSign } from "lucide-react";
 import emailjs from "@emailjs/browser";
 import { jsPDF } from "jspdf";
 import { PayPalScriptProvider, PayPalButtons } from "@paypal/react-paypal-js";
@@ -426,37 +426,6 @@ const handleCardSubmit = async (e: React.FormEvent) => {
                 </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Select payment method
-                </label>
-                <div className="grid grid-cols-2 gap-4">
-                  <button
-                    type="button"
-                    className={`${
-                      paymentMethod === "visa"
-                        ? "bg-indigo-600 text-white"
-                        : "bg-white text-gray-700 border border-gray-300"
-                    } px-4 py-2 rounded-md text-sm font-medium hover:bg-indigo-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 flex items-center justify-center`}
-                    onClick={() => setPaymentMethod("visa")}
-                  >
-                    <CreditCard className="h-5 w-5 mr-2" />
-                    Credit Card
-                  </button>
-                  <button
-                    type="button"
-                    className={`${
-                      paymentMethod === "paypal"
-                        ? "bg-indigo-600 text-white"
-                        : "bg-white text-gray-700 border border-gray-300"
-                    } px-4 py-2 rounded-md text-sm font-medium hover:bg-indigo-50 focus:outline-none focus:ring-2 focus:ring-indigo-500`}
-                    onClick={() => setPaymentMethod("paypal")}
-                  >
-                    PayPal
-                  </button>
-                </div>
-              </div>
-
               {paymentMethod === "visa" && (
                 <div className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
@@ -596,6 +565,25 @@ const handleCardSubmit = async (e: React.FormEvent) => {
                   Donate anonymously
                 </label>
               </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2 flex justify-center">
+                </label>
+                <div className="grid grid-cols-2 gap-4 flex justify-center">
+                  
+                  <button
+                    type="button"
+                    className={`${
+                      paymentMethod === "paypal"
+                        ? "bg-indigo-600 text-white"
+                        : "bg-white text-gray-700 border border-gray-300"
+                    } px-4 py-2 rounded-md text-sm font-medium hover:bg-indigo-50 focus:outline-none focus:ring-2 focus:ring-indigo-500`}
+                    onClick={() => setPaymentMethod("paypal")}
+                  >
+                    Pay now
+                  </button>
+                </div>
+              </div>
+              
 
               <button
                 type="submit"
