@@ -22,3 +22,12 @@ export const createBooking = async (req: Request, res: Response) => {
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
+
+export const getAllBookings = async (req: Request, res: Response) => {
+    try {
+      const bookings = await Booking.find().sort({ createdAt: -1 });
+      res.json(bookings);
+    } catch (error) {
+      res.status(500).json({ message: 'Failed to fetch bookings' });
+    }
+  };

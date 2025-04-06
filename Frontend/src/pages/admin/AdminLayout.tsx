@@ -82,6 +82,7 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
         { name: "Find a Mentor", path: "/admin/mentorship/find-mentor" },
         { name: "Group Sessions", path: "/admin/mentorship/group-session" },
         { name: "Resources", path: "/admin/mentorship/resources" },
+        {name: "Session Registration", path:"/admin/mentorship/Session-registration"}
       ],
     },
     {

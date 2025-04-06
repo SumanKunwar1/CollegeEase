@@ -116,6 +116,7 @@ import AdminStudentRegistrations from "./pages/admin/donation/StudentData";
 
 //admin find mentor
 import { AdminMentorsPage } from "./pages/admin/montorship/AdminFindMentor";
+import AdminBookSession from "./pages/admin/montorship/AdminBookSession";
 import { AdminGroupSessionsPage } from "./pages/admin/montorship/AdminGroupSession";
 import { AdminResourcesPage } from "./pages/admin/montorship/AdminResources";
 
@@ -564,6 +565,19 @@ function AppContent() {
               />
             }
           />
+          <Route
+            path="/admin/mentorship/Session-registration"
+            element={
+              <PrivateRoute
+                element={
+                  <AdminLayout>
+                    <AdminBookSession />
+                  </AdminLayout>
+                }
+              />
+            }
+          />
+
           <Route
             path="/admin/mentorship/group-session"
             element={
