@@ -119,6 +119,7 @@ import { AdminMentorsPage } from "./pages/admin/montorship/AdminFindMentor";
 import AdminBookSession from "./pages/admin/montorship/AdminBookSession";
 import { AdminGroupSessionsPage } from "./pages/admin/montorship/AdminGroupSession";
 import { AdminResourcesPage } from "./pages/admin/montorship/AdminResources";
+import AdminMentorPage from "./pages/admin/montorship/AdminBecameMentor";
 
 import AdminScholarshipsPage from "./pages/admin/scholarship/AdminScholarship";
 import AdminScholarshipDetails from "./pages/admin/scholarship/AdminScholarshipDetails";
@@ -560,6 +561,18 @@ function AppContent() {
                 element={
                   <AdminLayout>
                     <AdminMentorsPage />
+                  </AdminLayout>
+                }
+              />
+            }
+          />
+          <Route
+            path="/admin/mentorship/mentor-registration"
+            element={
+              <PrivateRoute
+                element={
+                  <AdminLayout>
+                    <AdminMentorPage />
                   </AdminLayout>
                 }
               />

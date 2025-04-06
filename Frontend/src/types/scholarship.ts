@@ -1,5 +1,6 @@
 // types/scholarship.ts
 export interface ScholarshipDetails {
+  _id: any;
   id: string;
   coverImage: string;
   name: string;

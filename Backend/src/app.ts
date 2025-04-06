@@ -25,8 +25,7 @@ import paymentRouter from './routes/paypal.routes';
 import donationSuccessStoryRouter from './routes/donationSuccessStory.routes';
 import mentorRouter from './routes/mentor.routes';
 import bookingRouter from './routes/booking.routes';
-
-
+import becameMentorRouter from './routes/becameMentor.routes';
 
 
 
@@ -89,6 +88,8 @@ app.use('/api/v1/payments', paymentRouter);
 app.use('/api/v1/donation-success-stories', donationSuccessStoryRouter);
 app.use('/api/v1/mentors', mentorRouter);
 app.use('/api/v1', bookingRouter);
+app.use('/api/v1/became-mentor', becameMentorRouter);
+
 
 
 
