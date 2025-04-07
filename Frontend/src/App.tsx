@@ -121,6 +121,7 @@ import { AdminGroupSessionsPage } from "./pages/admin/montorship/AdminGroupSessi
 import { AdminResourcesPage } from "./pages/admin/montorship/AdminResources";
 import AdminMentorPage from "./pages/admin/montorship/AdminBecameMentor";
 import AdminGroupSessionRegistration from "./pages/admin/montorship/AdminGroupSessionRegistration";
+import ResourceAdminDashboard from "./pages/admin/montorship/ResourceRequest";
 
 //scholarship
 
@@ -625,6 +626,18 @@ function AppContent() {
                 element={
                   <AdminLayout>
                     <AdminResourcesPage />
+                  </AdminLayout>
+                }
+              />
+            }
+          />
+          <Route
+            path="/admin/mentorship/requested-resources"
+            element={
+              <PrivateRoute
+                element={
+                  <AdminLayout>
+                    <ResourceAdminDashboard />
                   </AdminLayout>
                 }
               />
