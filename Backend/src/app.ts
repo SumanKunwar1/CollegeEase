@@ -32,7 +32,7 @@ import feedbackRoutes from './routes/feedback.routes';
 import resourceRouter from './routes/resource.routes';
 import resourceRequestRouter from './routes/resourceRequest.routes';
 import jobRouter from './routes/job.routes';
-
+import applicationFormRouter from './routes/applicationForm.routes';
 
 
 
@@ -99,6 +99,7 @@ app.use('/api/v1/feedback', feedbackRoutes);
 app.use('/api/v1/resources', resourceRouter);
 app.use('/api/v1/resource-requests', resourceRequestRouter);
 app.use('/api/v1/jobs', jobRouter);
+app.use('/api/v1/application-forms', applicationFormRouter);
 
 // Error handling
 app.use(errorHandler);
