@@ -3,6 +3,7 @@
 import { useState } from "react";
 
 interface ApplicationFormProps {
+  jobId: string;
   onClose: () => void;
 }
 

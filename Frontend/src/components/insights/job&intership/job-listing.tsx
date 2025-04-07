@@ -4,12 +4,16 @@ import { useNavigate } from "react-router-dom";
 
 interface JobListingProps {
   job: {
-    id: number;
+    id: string;
     title: string;
     company: string;
     location: string;
     type: string;
+    salary: string;
+    requirements: string[],
+    responsibilities: string[],
     description: string;
+    whyJoinUs: string;
   };
 }
 

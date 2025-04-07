@@ -500,4 +500,3 @@ export function AdminJobAndPlacementPage() {
     </div>
   )
 }
-

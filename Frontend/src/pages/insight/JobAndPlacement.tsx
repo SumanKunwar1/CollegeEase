@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Briefcase, Users, Building, Search, ArrowRight } from "lucide-react";
 import { JobListing } from "../../components/insights/job&intership/job-listing";
 import { AuthModal } from "../../components/insights/job&intership/auth-modal";
@@ -6,32 +6,70 @@ import { SmartMatchingSection } from "../../components/insights/job&intership/sm
 import { InstituteDashboard } from "../../components/insights/job&intership/institute-dashboard";
 import { RecruiterDashboard } from "../../components/insights/job&intership/recruiter-dashboard";
 import { StudentDashboard } from "../../components/insights/job&intership/student-dashboard";
+import axios from "axios";
+import { IJob } from "../../types/job";
+import { useEnhancedToast } from "../../components/ui/enhanced-toast";
 
 const JobsAndPlacementPage = () => {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [userType, setUserType] = useState<
     "student" | "recruiter" | "institute" | null
   >(null);
+  const [jobListings, setJobListings] = useState<IJob[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [locationTerm, setLocationTerm] = useState("");
+  const { toast } = useEnhancedToast();
 
-  const jobListings = [
-    {
-      id: 1,
-      title: "Software Engineer",
-      company: "Tech Innovators Inc.",
-      location: "San Francisco, CA",
-      type: "Full-time",
-      description: "Exciting opportunity for a skilled software engineer...",
-    },
-    {
-      id: 2,
-      title: "Data Scientist Intern",
-      company: "Data Insights Co.",
-      location: "New York, NY",
-      type: "Internship",
-      description: "Join our data science team for a summer internship...",
-    },
-    // Add more job listings as needed
-  ];
+  useEffect(() => {
+    const fetchJobs = async () => {
+      try {
+        const response = await axios.get(
+          `${import.meta.env.VITE_API_BASE_URL}/jobs`
+        );
+        setJobListings(response.data.data);
+      } catch (error) {
+        toast({
+          title: "Error",
+          description: "Failed to fetch job listings",
+          variant: "destructive",
+        });
+        console.error("Error fetching jobs:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchJobs();
+  }, []);
+
+  const handleSearch = async () => {
+    try {
+      setLoading(true);
+      let url = `${import.meta.env.VITE_API_BASE_URL}/jobs`;
+      
+      // Add search parameters if they exist
+      const params = new URLSearchParams();
+      if (searchTerm) params.append('title', searchTerm);
+      if (locationTerm) params.append('location', locationTerm);
+      
+      if (params.toString()) {
+        url += `?${params.toString()}`;
+      }
+
+      const response = await axios.get(url);
+      setJobListings(response.data.data);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to search jobs",
+        variant: "destructive",
+      });
+      console.error("Error searching jobs:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 pt-20">
@@ -50,7 +88,11 @@ const JobsAndPlacementPage = () => {
         {/* Quick Stats */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
           {[
-            { icon: Briefcase, label: "Active Job Listings", value: "1000+" },
+            { 
+              icon: Briefcase, 
+              label: "Active Job Listings", 
+              value: `${jobListings.length}+` 
+            },
             { icon: Users, label: "Registered Students", value: "10,000+" },
             { icon: Building, label: "Partner Companies", value: "500+" },
           ].map((stat, index) => (
@@ -76,20 +118,34 @@ const JobsAndPlacementPage = () => {
             <h2 className="text-2xl font-semibold text-gray-900 mb-6">
               Find Your Next Opportunity
             </h2>
-            <div className="flex gap-4">
+            <div className="flex flex-col md:flex-row gap-4">
               <input
                 type="text"
                 placeholder="Job title, keywords, or company"
                 className="flex-grow px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
               />
               <input
                 type="text"
                 placeholder="Location"
-                className="w-1/4 px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full md:w-1/4 px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                value={locationTerm}
+                onChange={(e) => setLocationTerm(e.target.value)}
               />
-              <button className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 transition-colors duration-200">
-                <Search className="inline-block mr-2" />
-                Search
+              <button 
+                onClick={handleSearch}
+                className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 transition-colors duration-200 flex items-center justify-center"
+                disabled={loading}
+              >
+                {loading ? (
+                  "Searching..."
+                ) : (
+                  <>
+                    <Search className="inline-block mr-2" />
+                    Search
+                  </>
+                )}
               </button>
             </div>
           </div>
@@ -101,11 +157,35 @@ const JobsAndPlacementPage = () => {
             <h2 className="text-2xl font-semibold text-gray-900 mb-6">
               Latest Job Listings
             </h2>
-            <div className="space-y-6">
-              {jobListings.map((job) => (
-                <JobListing key={job.id} job={job} />
-              ))}
-            </div>
+            {loading ? (
+              <div className="flex justify-center items-center py-12">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+              </div>
+            ) : jobListings.length === 0 ? (
+              <div className="text-center py-12">
+                <p className="text-gray-500">No job listings found</p>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                {jobListings.map((job) => (
+                  <JobListing 
+                    key={job._id} 
+                    job={{
+                      id: job._id,
+                      title: job.title,
+                      company: job.company,
+                      location: job.location,
+                      type: job.type,
+                      description: job.description,
+                      salary: job.salary,
+                      requirements: job.requirements,
+                      responsibilities: job.responsibilities,
+                      whyJoinUs: job.whyJoinUs
+                    }} 
+                  />
+                ))}
+              </div>
+            )}
             <div className="mt-8 text-center">
               <button className="inline-flex items-center text-blue-600 hover:text-blue-700">
                 View all job listings <ArrowRight className="ml-2 h-4 w-4" />
