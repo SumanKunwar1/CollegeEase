@@ -7,17 +7,76 @@ import {
   Share2,
   BookOpen,
 } from "lucide-react";
-import { getResourceById, getRelatedResources } from "../../data/resource";
-import { useState, useRef } from "react"; // Import useState and useRef
+import { useState, useRef, useEffect } from "react";
+import axios from "axios";
+import { toast } from "react-toastify";
+
+interface Resource {
+  _id: string;
+  title: string;
+  author: string;
+  type: string;
+  description: string;
+  downloadUrl: string;
+  downloadCount: number;
+  rating: number;
+  reviewCount: number;
+  datePublished: string;
+  fileSize: string;
+  detailedDescription?: string;
+  requirements?: string[];
+  videoUrl?: string;
+  imageUrl?: string;
+}
+
+interface RelatedResource {
+  _id: string;
+  title: string;
+  type: string;
+}
 
 const ResourceDetailsPage = () => {
   const { id } = useParams<{ id: string }>();
-  const resource = getResourceById(id || "");
-  const relatedResources = getRelatedResources(id || "");
-  const [isPlaying, setIsPlaying] = useState(false); // State to track play/pause
-  const videoRef = useRef<HTMLVideoElement>(null); // Ref for the video element
+  const [resource, setResource] = useState<Resource | null>(null);
+  const [relatedResources, setRelatedResources] = useState<RelatedResource[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
 
-  // Function to handle play/pause
+  useEffect(() => {
+    const fetchResourceDetails = async () => {
+      try {
+        setLoading(true);
+        const response = await axios.get(
+          `${import.meta.env.VITE_API_BASE_URL}/resources/${id}`
+        );
+        setResource(response.data.data);
+        
+        // Fetch related resources of the same type
+        const relatedResponse = await axios.get(
+          `${import.meta.env.VITE_API_BASE_URL}/resources`,
+          {
+            params: { 
+              type: response.data.data.type,
+              limit: 3,
+              exclude: response.data.data._id 
+            }
+          }
+        );
+        setRelatedResources(relatedResponse.data.data);
+      } catch (error) {
+        console.error("Error fetching resource details:", error);
+        toast.error("Failed to load resource details");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (id) {
+      fetchResourceDetails();
+    }
+  }, [id]);
+
   const togglePlayPause = () => {
     if (videoRef.current) {
       if (isPlaying) {
@@ -28,6 +87,17 @@ const ResourceDetailsPage = () => {
       setIsPlaying(!isPlaying);
     }
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 pt-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading resource details...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!resource) {
     return (
@@ -90,7 +160,7 @@ const ResourceDetailsPage = () => {
               <div className="flex items-center">
                 <Clock className="h-5 w-5 text-gray-400 mr-2" />
                 <span className="text-gray-600">
-                  Published {resource.datePublished}
+                  Published {new Date(resource.datePublished).toLocaleDateString()}
                 </span>
               </div>
             </div>
@@ -111,7 +181,8 @@ const ResourceDetailsPage = () => {
                   <video
                     ref={videoRef}
                     className="w-full rounded-lg"
-                    controls={false} // Disable default controls
+                    controls={false}
+                    poster={resource.imageUrl}
                   >
                     <source src={resource.videoUrl} type="video/mp4" />
                     Your browser does not support the video tag.
@@ -172,7 +243,7 @@ const ResourceDetailsPage = () => {
               </div>
             </div>
 
-            {resource.requirements && (
+            {resource.requirements && resource.requirements.length > 0 && (
               <div className="bg-white rounded-xl shadow-md p-8">
                 <h2 className="text-2xl font-semibold text-gray-900 mb-4">
                   Requirements
@@ -204,6 +275,8 @@ const ResourceDetailsPage = () => {
               <div className="space-y-4">
                 <a
                   href={resource.downloadUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="w-full inline-flex justify-center items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
                 >
                   <Download className="h-4 w-4 mr-2" />
@@ -225,8 +298,8 @@ const ResourceDetailsPage = () => {
                 <div className="space-y-4">
                   {relatedResources.map((related) => (
                     <Link
-                      key={related.id}
-                      to={`/mentorship/resources/${related.id}`}
+                      key={related._id}
+                      to={`/mentorship/resources/${related._id}`}
                       className="block p-4 rounded-lg hover:bg-gray-50"
                     >
                       <div className="flex items-start">

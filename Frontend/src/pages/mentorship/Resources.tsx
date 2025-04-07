@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import {
   BookOpen,
@@ -8,13 +8,32 @@ import {
   ExternalLink,
   Search,
 } from "lucide-react";
-import { filterResources } from "../../data/resource";
-import RequestResourceForm from "./ResourcesForm"; // Correct import
+import axios from "axios";
+import { toast } from "react-toastify";
+import RequestResourceForm from "./ResourcesForm";
+
+interface Resource {
+  _id: string;
+  title: string;
+  author: string;
+  type: string;
+  description: string;
+  downloadUrl: string;
+  downloadCount: number;
+  rating: number;
+  datePublished: string;
+  fileSize: string;
+  detailedDescription?: string;
+  requirements?: string[];
+  videoUrl?: string;
+  imageUrl?: string;
+}
 
 const ResourcesPage = () => {
   const [searchQuery, setSearchQuery] = useState("");
-  const [showRequestForm, setShowRequestForm] = useState(false); // State for showing the form
-  const filteredResources = filterResources({ searchQuery });
+  const [showRequestForm, setShowRequestForm] = useState(false);
+  const [resources, setResources] = useState<Resource[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const categories = [
     {
@@ -34,12 +53,39 @@ const ResourcesPage = () => {
     },
   ];
 
+  useEffect(() => {
+    const fetchResources = async () => {
+      try {
+        setLoading(true);
+        const response = await axios.get(
+          `${import.meta.env.VITE_API_BASE_URL}/resources`,
+          {
+            params: { search: searchQuery },
+          }
+        );
+        setResources(response.data.data);
+      } catch (error) {
+        console.error("Error fetching resources:", error);
+        toast.error("Failed to fetch resources");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    // Add debounce to prevent too many API calls while typing
+    const debounceTimer = setTimeout(() => {
+      fetchResources();
+    }, 500);
+
+    return () => clearTimeout(debounceTimer);
+  }, [searchQuery]);
+
   const handleOpenForm = () => {
-    setShowRequestForm(true); // Show the form when button is clicked
+    setShowRequestForm(true);
   };
 
   const handleCloseForm = () => {
-    setShowRequestForm(false); // Close the form
+    setShowRequestForm(false);
   };
 
   return (
@@ -87,49 +133,70 @@ const ResourcesPage = () => {
 
         {/* Featured Resources */}
         <div className="space-y-6">
-          <h2 className="text-2xl font-bold text-gray-900">
-            Featured Resources
-          </h2>
+          <h2 className="text-2xl font-bold text-gray-900">Featured Resources</h2>
 
-          <div className="grid gap-6 md:grid-cols-2">
-            {filteredResources.map((resource) => (
-              <div
-                key={resource.id}
-                className="bg-white rounded-lg shadow-md p-6"
-              >
-                <div className="flex items-start justify-between">
-                  <div>
-                    <h3 className="text-xl font-semibold text-gray-900">
-                      {resource.title}
-                    </h3>
-                    <p className="text-gray-500 mt-1">By {resource.author}</p>
+          {loading ? (
+            <div className="flex justify-center items-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
+            </div>
+          ) : resources.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-gray-500">
+                {searchQuery
+                  ? "No resources match your search."
+                  : "No resources available at the moment."}
+              </p>
+            </div>
+          ) : (
+            <div className="grid gap-6 md:grid-cols-2">
+              {resources.map((resource) => (
+                <div
+                  key={resource._id}
+                  className="bg-white rounded-lg shadow-md p-6"
+                >
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <h3 className="text-xl font-semibold text-gray-900">
+                        {resource.title}
+                      </h3>
+                      <p className="text-gray-500 mt-1">By {resource.author}</p>
+                    </div>
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
+                      {resource.type}
+                    </span>
                   </div>
-                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
-                    {resource.type}
-                  </span>
-                </div>
 
-                <p className="mt-4 text-gray-600">{resource.description}</p>
+                  <p className="mt-4 text-gray-600">{resource.description}</p>
 
-                <div className="mt-6 flex space-x-4">
-                  <a
-                    href={resource.downloadUrl}
-                    className="flex-1 inline-flex justify-center items-center px-4 py-2 border border-indigo-600 text-indigo-600 rounded-lg hover:bg-indigo-50"
-                  >
-                    <Download className="h-4 w-4 mr-2" />
-                    Download
-                  </a>
-                  <Link
-                    to={`/mentorship/resources/${resource.id}`}
-                    className="flex-1 inline-flex justify-center items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
-                  >
-                    <ExternalLink className="h-4 w-4 mr-2" />
-                    View Online
-                  </Link>
+                  <div className="mt-4 text-sm text-gray-500">
+                    <p>
+                      Downloads: {resource.downloadCount} | Published:{" "}
+                      {new Date(resource.datePublished).toLocaleDateString()}
+                    </p>
+                  </div>
+
+                  <div className="mt-6 flex space-x-4">
+                    <a
+                      href={resource.downloadUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex-1 inline-flex justify-center items-center px-4 py-2 border border-indigo-600 text-indigo-600 rounded-lg hover:bg-indigo-50"
+                    >
+                      <Download className="h-4 w-4 mr-2" />
+                      Download
+                    </a>
+                    <Link
+                      to={`/mentorship/resources/${resource._id}`}
+                      className="flex-1 inline-flex justify-center items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+                    >
+                      <ExternalLink className="h-4 w-4 mr-2" />
+                      View Details
+                    </Link>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Request Resources Button */}
@@ -142,7 +209,7 @@ const ResourcesPage = () => {
             additional materials would be helpful.
           </p>
           <button
-            onClick={handleOpenForm} // Open the form
+            onClick={handleOpenForm}
             className="px-8 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-semibold"
           >
             Request Resources
