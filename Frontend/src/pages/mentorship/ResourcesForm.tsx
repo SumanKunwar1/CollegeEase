@@ -1,4 +1,3 @@
-import type React from "react";
 import { useState } from "react";
 import { motion } from "framer-motion";
 
@@ -6,9 +5,7 @@ interface RequestResourceFormProps {
   onClose: () => void;
 }
 
-const RequestResourceForm: React.FC<RequestResourceFormProps> = ({
-  onClose,
-}) => {
+const RequestResourceForm: React.FC<RequestResourceFormProps> = ({ onClose }) => {
   const [formData, setFormData] = useState({
     name: "",
     age: "",
@@ -16,6 +13,8 @@ const RequestResourceForm: React.FC<RequestResourceFormProps> = ({
     country: "",
     requestedResources: "",
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState("");
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -27,17 +26,44 @@ const RequestResourceForm: React.FC<RequestResourceFormProps> = ({
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Form submitted:", formData);
-    setFormData({
-      name: "",
-      age: "",
-      academicBackground: "",
-      country: "",
-      requestedResources: "",
-    });
-    onClose();
+    setIsSubmitting(true);
+    setError("");
+
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_API_BASE_URL}/resource-requests`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(formData),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to submit request");
+      }
+
+      const result = await response.json();
+      console.log("Success:", result);
+      
+      setFormData({
+        name: "",
+        age: "",
+        academicBackground: "",
+        country: "",
+        requestedResources: "",
+      });
+      onClose();
+    } catch (error) {
+      console.error("Error:", error);
+      setError("There was an error submitting your request. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -50,6 +76,11 @@ const RequestResourceForm: React.FC<RequestResourceFormProps> = ({
       <h2 className="text-2xl font-bold text-gray-800 mb-6">
         Request Resources
       </h2>
+      {error && (
+        <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-md">
+          {error}
+        </div>
+      )}
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
@@ -84,6 +115,8 @@ const RequestResourceForm: React.FC<RequestResourceFormProps> = ({
               value={formData.age}
               onChange={handleChange}
               required
+              min="10"
+              max="100"
               className="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition duration-150 ease-in-out"
               placeholder="Enter your age"
             />
@@ -104,7 +137,7 @@ const RequestResourceForm: React.FC<RequestResourceFormProps> = ({
             onChange={handleChange}
             required
             className="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition duration-150 ease-in-out"
-            placeholder="Enter your academic background"
+            placeholder="E.g., High School, Undergraduate, etc."
           />
         </div>
         <div>
@@ -140,22 +173,24 @@ const RequestResourceForm: React.FC<RequestResourceFormProps> = ({
             required
             rows={4}
             className="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition duration-150 ease-in-out resize-none"
-            placeholder="Describe the resources you need"
+            placeholder="Describe the resources you need (e.g., study materials, research papers, etc.)"
           ></textarea>
         </div>
         <div className="flex justify-end space-x-4">
           <button
             type="button"
             onClick={onClose}
-            className="px-6 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-150 ease-in-out"
+            disabled={isSubmitting}
+            className="px-6 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-150 ease-in-out disabled:opacity-50"
           >
             Cancel
           </button>
           <button
             type="submit"
-            className="px-6 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-150 ease-in-out"
+            disabled={isSubmitting}
+            className="px-6 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-150 ease-in-out disabled:opacity-50"
           >
-            Submit Request
+            {isSubmitting ? "Submitting..." : "Submit Request"}
           </button>
         </div>
       </form>

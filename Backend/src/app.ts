@@ -30,6 +30,8 @@ import groupSessionRouter from './routes/groupSession.routes';
 import groupPaymentRouter from './routes/groupPayment.routes';
 import feedbackRoutes from './routes/feedback.routes';
 import resourceRouter from './routes/resource.routes';
+import resourceRequestRouter from './routes/resourceRequest.routes';
+
 
 
 
@@ -70,8 +72,6 @@ if (!fs.existsSync(uploadsDir)) {
 // Static files
 app.use('/uploads', express.static(uploadsDir));
 
-
-
 // Routes
 app.use('/api/v1/auth', authRouter);
 app.use('/api/v1/admin', adminRouter);
@@ -95,6 +95,7 @@ app.use('/api/v1/group-sessions', groupSessionRouter);
 app.use('/api/v1/payments', groupPaymentRouter);
 app.use('/api/v1/feedback', feedbackRoutes);
 app.use('/api/v1/resources', resourceRouter);
+app.use('/api/v1/resource-requests', resourceRequestRouter);
 
 // Error handling
 app.use(errorHandler);

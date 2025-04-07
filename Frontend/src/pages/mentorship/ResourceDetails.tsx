@@ -2,7 +2,6 @@ import { useParams, Link } from "react-router-dom";
 import {
   Download,
   Clock,
-  Star,
   ArrowLeft,
   Share2,
   BookOpen,
@@ -19,8 +18,6 @@ interface Resource {
   description: string;
   downloadUrl: string;
   downloadCount: number;
-  rating: number;
-  reviewCount: number;
   datePublished: string;
   fileSize: string;
   detailedDescription?: string;
@@ -40,8 +37,6 @@ const ResourceDetailsPage = () => {
   const [resource, setResource] = useState<Resource | null>(null);
   const [relatedResources, setRelatedResources] = useState<RelatedResource[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
     const fetchResourceDetails = async () => {
@@ -77,15 +72,20 @@ const ResourceDetailsPage = () => {
     }
   }, [id]);
 
-  const togglePlayPause = () => {
-    if (videoRef.current) {
-      if (isPlaying) {
-        videoRef.current.pause();
-      } else {
-        videoRef.current.play();
-      }
-      setIsPlaying(!isPlaying);
+  const getYouTubeEmbedUrl = (url: string) => {
+    if (!url) return '';
+    
+    // Handle both full URL and shortened URL
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+    const match = url.match(regExp);
+    
+    const videoId = (match && match[2].length === 11) ? match[2] : null;
+    
+    if (videoId) {
+      return `https://www.youtube.com/embed/${videoId}`;
     }
+    
+    return url;
   };
 
   if (loading) {
@@ -152,12 +152,6 @@ const ResourceDetailsPage = () => {
                 </span>
               </div>
               <div className="flex items-center">
-                <Star className="h-5 w-5 text-yellow-400 mr-2" />
-                <span className="text-gray-600">
-                  {resource.rating} ({resource.reviewCount} reviews)
-                </span>
-              </div>
-              <div className="flex items-center">
                 <Clock className="h-5 w-5 text-gray-400 mr-2" />
                 <span className="text-gray-600">
                   Published {new Date(resource.datePublished).toLocaleDateString()}
@@ -177,52 +171,15 @@ const ResourceDetailsPage = () => {
                 <h2 className="text-2xl font-semibold text-gray-900 mb-4">
                   Video
                 </h2>
-                <div className="relative">
-                  <video
-                    ref={videoRef}
-                    className="w-full rounded-lg"
-                    controls={false}
-                    poster={resource.imageUrl}
-                  >
-                    <source src={resource.videoUrl} type="video/mp4" />
-                    Your browser does not support the video tag.
-                  </video>
-                  <button
-                    onClick={togglePlayPause}
-                    className="absolute inset-0 flex items-center justify-center w-full h-full bg-black bg-opacity-30 text-white rounded-lg hover:bg-opacity-50"
-                  >
-                    {isPlaying ? (
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="h-12 w-12"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M10 9v6m4-6v6m-8 4h12a2 2 0 002-2V7a2 2 0 00-2-2H6a2 2 0 00-2 2v10a2 2 0 002 2z"
-                        />
-                      </svg>
-                    ) : (
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="h-12 w-12"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M14.752 11.168l-6.54-4.96A1 1 0 006 7v10a1 1 0 001.212.977l6.54-1.96a1 1 0 00.788-.977v-6a1 1 0 00-.788-.832z"
-                        />
-                      </svg>
-                    )}
-                  </button>
+                <div className="relative aspect-video">
+                  <iframe
+                    src={getYouTubeEmbedUrl(resource.videoUrl)}
+                    className="w-full h-full rounded-lg"
+                    frameBorder="0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                    title={resource.title}
+                  />
                 </div>
               </div>
             )}
