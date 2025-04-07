@@ -1,11 +1,12 @@
+// AdminSkillDevelopmentPage.tsx
 "use client";
 
 import type React from "react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Award, Clock, Star, Plus, Trash, Edit, Search, X } from "lucide-react";
 
 interface Course {
-  id: number;
+  _id: string;
   title: string;
   duration: string;
   level: string;
@@ -28,167 +29,30 @@ interface Course {
 }
 
 interface SkillCategory {
-  id: number;
+  _id: string;
   title: string;
   description: string;
   courses: Course[];
 }
 
 export function AdminSkillDevelopmentPage() {
-  const [categories, setCategories] = useState<SkillCategory[]>([
-    {
-      id: 1,
-      title: "Technical Skills",
-      description: "Master the technical skills most in demand by employers",
-      courses: [
-        {
-          id: 1,
-          title: "Data Analysis Fundamentals",
-          duration: "6 weeks",
-          level: "Beginner",
-          rating: 4.8,
-          students: 1234,
-          imageUrl:
-            "https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&q=80&w=400",
-          details: {
-            overview:
-              "Learn the fundamentals of data analysis including statistical methods, data visualization, and basic programming.",
-            syllabus: [
-              {
-                title: "Introduction to Data Analysis",
-                description: [
-                  "Overview of data analysis process",
-                  "Types of data and their characteristics",
-                  "Setting up your analysis environment",
-                ],
-              },
-              {
-                title: "Statistical Methods",
-                description: [
-                  "Descriptive statistics",
-                  "Inferential statistics",
-                  "Hypothesis testing",
-                ],
-                imageUrl:
-                  "https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&q=80&w=400",
-              },
-            ],
-            instructor: {
-              name: "Dr. Sarah Johnson",
-              bio: "Data scientist with 10+ years of experience in the field. Previously worked at Google and Amazon.",
-              imageUrl:
-                "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=400",
-            },
-          },
-        },
-        {
-          id: 2,
-          title: "Cloud Computing Essentials",
-          duration: "8 weeks",
-          level: "Intermediate",
-          rating: 4.7,
-          students: 987,
-          imageUrl:
-            "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&q=80&w=400",
-          details: {
-            overview:
-              "Master the fundamentals of cloud computing with hands-on experience in AWS, Azure, and Google Cloud.",
-            syllabus: [
-              {
-                title: "Cloud Computing Basics",
-                description: [
-                  "Introduction to cloud computing",
-                  "Cloud service models",
-                  "Major cloud providers",
-                ],
-              },
-              {
-                title: "AWS Fundamentals",
-                description: [
-                  "EC2 and virtual machines",
-                  "S3 storage",
-                  "Lambda functions",
-                ],
-              },
-            ],
-            instructor: {
-              name: "Michael Chen",
-              bio: "Cloud architect with certifications in AWS, Azure, and Google Cloud. 8+ years of industry experience.",
-              imageUrl:
-                "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=400",
-            },
-          },
-        },
-      ],
-    },
-    {
-      id: 2,
-      title: "Soft Skills",
-      description: "Develop essential interpersonal and leadership skills",
-      courses: [
-        {
-          id: 3,
-          title: "Effective Communication",
-          duration: "4 weeks",
-          level: "All Levels",
-          rating: 4.9,
-          students: 2156,
-          imageUrl:
-            "https://images.unsplash.com/photo-1557804506-669a67965ba0?auto=format&fit=crop&q=80&w=400",
-          details: {
-            overview:
-              "Improve your communication skills in professional settings, from presentations to one-on-one interactions.",
-            syllabus: [
-              {
-                title: "Principles of Effective Communication",
-                description: [
-                  "Understanding communication styles",
-                  "Active listening techniques",
-                  "Nonverbal communication",
-                ],
-              },
-              {
-                title: "Professional Presentations",
-                description: [
-                  "Structure and preparation",
-                  "Visual aids and slide design",
-                  "Handling Q&A sessions",
-                ],
-              },
-            ],
-            instructor: {
-              name: "Emily Rodriguez",
-              bio: "Communication coach with experience training executives at Fortune 500 companies.",
-              imageUrl:
-                "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=400",
-            },
-          },
-        },
-      ],
-    },
-  ]);
-
+  const [categories, setCategories] = useState<SkillCategory[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [showAddCategoryForm, setShowAddCategoryForm] = useState(false);
   const [showAddCourseForm, setShowAddCourseForm] = useState(false);
-  const [editingCategory, setEditingCategory] = useState<SkillCategory | null>(
-    null
-  );
+  const [editingCategory, setEditingCategory] = useState<SkillCategory | null>(null);
   const [editingCourse, setEditingCourse] = useState<Course | null>(null);
-  const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(
-    null
-  );
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
 
   // Form states
-  const [categoryFormData, setCategoryFormData] = useState<
-    Omit<SkillCategory, "id" | "courses">
-  >({
+  const [categoryFormData, setCategoryFormData] = useState({
     title: "",
     description: "",
   });
 
-  const [courseFormData, setCourseFormData] = useState<Omit<Course, "id">>({
+  const [courseFormData, setCourseFormData] = useState<Omit<Course, "_id">>({
     title: "",
     duration: "",
     level: "",
@@ -211,6 +75,23 @@ export function AdminSkillDevelopmentPage() {
       },
     },
   });
+
+  // Fetch categories from API
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/skill-development`);
+        const data = await response.json();
+        setCategories(data);
+        setIsLoading(false);
+      } catch (error) {
+        console.error("Error fetching categories:", error);
+        setIsLoading(false);
+      }
+    };
+
+    fetchCategories();
+  }, []);
 
   // Filter categories and courses based on search query
   const filteredCategories = categories
@@ -236,9 +117,7 @@ export function AdminSkillDevelopmentPage() {
   };
 
   const handleCourseInputChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target;
 
@@ -247,7 +126,6 @@ export function AdminSkillDevelopmentPage() {
 
       if (parts.length === 2) {
         setCourseFormData((prev) => {
-          // Ensure we're spreading an object
           const firstPart = prev[parts[0] as keyof typeof prev];
           if (typeof firstPart === "object" && firstPart !== null) {
             return {
@@ -262,7 +140,6 @@ export function AdminSkillDevelopmentPage() {
         });
       } else if (parts.length === 3) {
         setCourseFormData((prev) => {
-          // Ensure we're spreading nested objects
           const firstPart = prev[parts[0] as keyof typeof prev];
           if (typeof firstPart === "object" && firstPart !== null) {
             const secondPart = firstPart[parts[1] as keyof typeof firstPart];
@@ -285,17 +162,12 @@ export function AdminSkillDevelopmentPage() {
     } else {
       setCourseFormData((prev) => ({
         ...prev,
-        [name]:
-          name === "rating" || name === "students" ? Number(value) : value,
+        [name]: name === "rating" || name === "students" ? Number(value) : value,
       }));
     }
   };
 
-  const handleSyllabusChange = (
-    index: number,
-    field: string,
-    value: string
-  ) => {
+  const handleSyllabusChange = (index: number, field: string, value: string) => {
     setCourseFormData((prev) => {
       const newSyllabus = [...prev.details.syllabus];
 
@@ -356,76 +228,206 @@ export function AdminSkillDevelopmentPage() {
     });
   };
 
-  const handleAddCategory = () => {
-    const newId =
-      categories.length > 0
-        ? Math.max(...categories.map((cat) => cat.id)) + 1
-        : 1;
-    const newCategory = { id: newId, ...categoryFormData, courses: [] };
+  const handleAddCategory = async () => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/skill-development`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(categoryFormData),
+      });
 
-    setCategories([...categories, newCategory]);
-    setShowAddCategoryForm(false);
-    setCategoryFormData({ title: "", description: "" });
-    setSuccessMessage("Skill category added successfully!");
+      if (!response.ok) {
+        throw new Error("Failed to add category");
+      }
+
+      const newCategory = await response.json();
+      setCategories([...categories, newCategory]);
+      setShowAddCategoryForm(false);
+      setCategoryFormData({ title: "", description: "" });
+      setSuccessMessage("Skill category added successfully!");
+    } catch (error) {
+      console.error("Error adding category:", error);
+      setSuccessMessage("Failed to add category");
+    }
 
     setTimeout(() => {
       setSuccessMessage("");
     }, 3000);
   };
 
-  const handleUpdateCategory = () => {
+  const handleUpdateCategory = async () => {
     if (!editingCategory) return;
 
-    setCategories(
-      categories.map((category) =>
-        category.id === editingCategory.id
-          ? {
-              ...category,
-              title: categoryFormData.title,
-              description: categoryFormData.description,
-            }
-          : category
-      )
-    );
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_API_BASE_URL}/skill-development/${editingCategory._id}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(categoryFormData),
+        }
+      );
 
-    setEditingCategory(null);
-    setCategoryFormData({ title: "", description: "" });
-    setSuccessMessage("Skill category updated successfully!");
+      if (!response.ok) {
+        throw new Error("Failed to update category");
+      }
+
+      const updatedCategory = await response.json();
+      setCategories(
+        categories.map((category) =>
+          category._id === updatedCategory._id ? updatedCategory : category
+        )
+      );
+      setEditingCategory(null);
+      setCategoryFormData({ title: "", description: "" });
+      setSuccessMessage("Skill category updated successfully!");
+    } catch (error) {
+      console.error("Error updating category:", error);
+      setSuccessMessage("Failed to update category");
+    }
 
     setTimeout(() => {
       setSuccessMessage("");
     }, 3000);
   };
 
-  const handleDeleteCategory = (id: number) => {
-    setCategories(categories.filter((category) => category.id !== id));
-    setSuccessMessage("Skill category deleted successfully!");
+  const handleDeleteCategory = async (id: string) => {
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_API_BASE_URL}/skill-development/${id}`,
+        {
+          method: "DELETE",
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to delete category");
+      }
+
+      setCategories(categories.filter((category) => category._id !== id));
+      setSuccessMessage("Skill category deleted successfully!");
+    } catch (error) {
+      console.error("Error deleting category:", error);
+      setSuccessMessage("Failed to delete category");
+    }
 
     setTimeout(() => {
       setSuccessMessage("");
     }, 3000);
   };
 
-  const handleAddCourse = () => {
+  const handleAddCourse = async () => {
     if (!selectedCategoryId) return;
 
-    const newId =
-      Math.max(
-        ...categories.flatMap((cat) => cat.courses.map((course) => course.id)),
-        0
-      ) + 1;
-    const newCourse = { id: newId, ...courseFormData };
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_API_BASE_URL}/skill-development/${selectedCategoryId}/courses`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(courseFormData),
+        }
+      );
 
-    setCategories(
-      categories.map((category) =>
-        category.id === selectedCategoryId
-          ? { ...category, courses: [...category.courses, newCourse] }
-          : category
-      )
-    );
+      if (!response.ok) {
+        throw new Error("Failed to add course");
+      }
 
-    setShowAddCourseForm(false);
-    setSelectedCategoryId(null);
+      const updatedCategory = await response.json();
+      setCategories(
+        categories.map((category) =>
+          category._id === updatedCategory._id ? updatedCategory : category
+        )
+      );
+      setShowAddCourseForm(false);
+      setSelectedCategoryId(null);
+      resetCourseForm();
+      setSuccessMessage("Course added successfully!");
+    } catch (error) {
+      console.error("Error adding course:", error);
+      setSuccessMessage("Failed to add course");
+    }
+
+    setTimeout(() => {
+      setSuccessMessage("");
+    }, 3000);
+  };
+
+  const handleUpdateCourse = async () => {
+    if (!editingCourse || !selectedCategoryId) return;
+
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_API_BASE_URL}/skill-development/${selectedCategoryId}/courses/${editingCourse._id}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(courseFormData),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to update course");
+      }
+
+      const updatedCategory = await response.json();
+      setCategories(
+        categories.map((category) =>
+          category._id === updatedCategory._id ? updatedCategory : category
+        )
+      );
+      setEditingCourse(null);
+      resetCourseForm();
+      setSuccessMessage("Course updated successfully!");
+    } catch (error) {
+      console.error("Error updating course:", error);
+      setSuccessMessage("Failed to update course");
+    }
+
+    setTimeout(() => {
+      setSuccessMessage("");
+    }, 3000);
+  };
+
+  const handleDeleteCourse = async (categoryId: string, courseId: string) => {
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_API_BASE_URL}/skill-development/${categoryId}/courses/${courseId}`,
+        {
+          method: "DELETE",
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to delete course");
+      }
+
+      const updatedCategory = await response.json();
+      setCategories(
+        categories.map((category) =>
+          category._id === updatedCategory._id ? updatedCategory : category
+        )
+      );
+      setSuccessMessage("Course deleted successfully!");
+    } catch (error) {
+      console.error("Error deleting course:", error);
+      setSuccessMessage("Failed to delete course");
+    }
+
+    setTimeout(() => {
+      setSuccessMessage("");
+    }, 3000);
+  };
+
+  const resetCourseForm = () => {
     setCourseFormData({
       title: "",
       duration: "",
@@ -449,70 +451,6 @@ export function AdminSkillDevelopmentPage() {
         },
       },
     });
-    setSuccessMessage("Course added successfully!");
-
-    setTimeout(() => {
-      setSuccessMessage("");
-    }, 3000);
-  };
-
-  const handleUpdateCourse = () => {
-    if (!editingCourse) return;
-
-    setCategories(
-      categories.map((category) => ({
-        ...category,
-        courses: category.courses.map((course) =>
-          course.id === editingCourse.id
-            ? { id: course.id, ...courseFormData }
-            : course
-        ),
-      }))
-    );
-
-    setEditingCourse(null);
-    setCourseFormData({
-      title: "",
-      duration: "",
-      level: "",
-      rating: 0,
-      students: 0,
-      imageUrl: "",
-      details: {
-        overview: "",
-        syllabus: [
-          {
-            title: "",
-            description: [""],
-            imageUrl: "",
-          },
-        ],
-        instructor: {
-          name: "",
-          bio: "",
-          imageUrl: "",
-        },
-      },
-    });
-    setSuccessMessage("Course updated successfully!");
-
-    setTimeout(() => {
-      setSuccessMessage("");
-    }, 3000);
-  };
-
-  const handleDeleteCourse = (courseId: number) => {
-    setCategories(
-      categories.map((category) => ({
-        ...category,
-        courses: category.courses.filter((course) => course.id !== courseId),
-      }))
-    );
-    setSuccessMessage("Course deleted successfully!");
-
-    setTimeout(() => {
-      setSuccessMessage("");
-    }, 3000);
   };
 
   const startEditCategory = (category: SkillCategory) => {
@@ -524,6 +462,15 @@ export function AdminSkillDevelopmentPage() {
   };
 
   const startEditCourse = (course: Course) => {
+    // Find the category that contains this course
+    const category = categories.find((cat) =>
+      cat.courses.some((c) => c._id === course._id)
+    );
+    
+    if (category) {
+      setSelectedCategoryId(category._id);
+    }
+
     setEditingCourse(course);
     setCourseFormData({
       title: course.title,
@@ -544,6 +491,17 @@ export function AdminSkillDevelopmentPage() {
     });
   };
 
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-6 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading skill development content...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto">
@@ -562,9 +520,14 @@ export function AdminSkillDevelopmentPage() {
             <button
               onClick={() => {
                 setShowAddCourseForm(true);
-                setSelectedCategoryId(categories[0]?.id || null);
+                setSelectedCategoryId(categories[0]?._id || null);
               }}
-              className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
+              disabled={categories.length === 0}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+                categories.length === 0
+                  ? "bg-gray-400 cursor-not-allowed"
+                  : "bg-green-600 hover:bg-green-700 text-white"
+              }`}
             >
               <Plus size={16} />
               Add Course
@@ -672,12 +635,12 @@ export function AdminSkillDevelopmentPage() {
                 <select
                   value={selectedCategoryId || ""}
                   onChange={(e) =>
-                    setSelectedCategoryId(Number(e.target.value))
+                    setSelectedCategoryId(e.target.value)
                   }
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   {categories.map((category) => (
-                    <option key={category.id} value={category.id}>
+                    <option key={category._id} value={category._id}>
                       {category.title}
                     </option>
                   ))}
@@ -927,29 +890,7 @@ export function AdminSkillDevelopmentPage() {
                   setShowAddCourseForm(false);
                   setEditingCourse(null);
                   setSelectedCategoryId(null);
-                  setCourseFormData({
-                    title: "",
-                    duration: "",
-                    level: "",
-                    rating: 0,
-                    students: 0,
-                    imageUrl: "",
-                    details: {
-                      overview: "",
-                      syllabus: [
-                        {
-                          title: "",
-                          description: [""],
-                          imageUrl: "",
-                        },
-                      ],
-                      instructor: {
-                        name: "",
-                        bio: "",
-                        imageUrl: "",
-                      },
-                    },
-                  });
+                  resetCourseForm();
                 }}
                 className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
               >
@@ -975,7 +916,7 @@ export function AdminSkillDevelopmentPage() {
         ) : (
           filteredCategories.map((category) => (
             <div
-              key={category.id}
+              key={category._id}
               className="bg-white rounded-lg shadow-md p-6 mb-8"
             >
               <div className="flex justify-between items-start mb-6">
@@ -993,7 +934,7 @@ export function AdminSkillDevelopmentPage() {
                     <Edit size={18} />
                   </button>
                   <button
-                    onClick={() => handleDeleteCategory(category.id)}
+                    onClick={() => handleDeleteCategory(category._id)}
                     className="p-2 text-red-600 hover:bg-red-50 rounded-md"
                   >
                     <Trash size={18} />
@@ -1004,7 +945,7 @@ export function AdminSkillDevelopmentPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {category.courses.map((course) => (
                   <div
-                    key={course.id}
+                    key={course._id}
                     className="border border-gray-200 rounded-lg p-4"
                   >
                     <div className="flex justify-between items-start">
@@ -1042,7 +983,7 @@ export function AdminSkillDevelopmentPage() {
                           <Edit size={16} />
                         </button>
                         <button
-                          onClick={() => handleDeleteCourse(course.id)}
+                          onClick={() => handleDeleteCourse(category._id, course._id)}
                           className="p-1 text-red-600 hover:bg-red-50 rounded-md"
                         >
                           <Trash size={16} />
@@ -1057,7 +998,7 @@ export function AdminSkillDevelopmentPage() {
                 <button
                   onClick={() => {
                     setShowAddCourseForm(true);
-                    setSelectedCategoryId(category.id);
+                    setSelectedCategoryId(category._id);
                   }}
                   className="text-blue-600 hover:text-blue-700 flex items-center"
                 >

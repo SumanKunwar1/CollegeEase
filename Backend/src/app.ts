@@ -33,8 +33,8 @@ import resourceRouter from './routes/resource.routes';
 import resourceRequestRouter from './routes/resourceRequest.routes';
 import jobRouter from './routes/job.routes';
 import applicationFormRouter from './routes/applicationForm.routes';
-
-
+import industryTrendRouter from './routes/industryTrend.routes';
+import skillDevelopmentRouter from './routes/skillDevelopment.routes';
 
 
 dotenv.config();
@@ -100,6 +100,8 @@ app.use('/api/v1/resources', resourceRouter);
 app.use('/api/v1/resource-requests', resourceRequestRouter);
 app.use('/api/v1/jobs', jobRouter);
 app.use('/api/v1/application-forms', applicationFormRouter);
+app.use('/api/v1/industry-trends', industryTrendRouter);
+app.use('/api/v1/skill-development', skillDevelopmentRouter);
 
 // Error handling
 app.use(errorHandler);
