@@ -298,7 +298,7 @@ function AppContent() {
             element={<SkillDevelopmentPage />}
           />
           <Route
-            path="/insights/skill-development/:courseTitle"
+            path="/insights/skill-development/:courseId"  
             element={<SkillDevelopmentDetails />}
           />
           <Route

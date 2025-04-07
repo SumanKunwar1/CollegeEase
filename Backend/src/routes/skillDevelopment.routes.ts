@@ -6,7 +6,8 @@ import {
   deleteSkillCategory,
   addCourseToCategory,
   updateCourseInCategory,
-  deleteCourseFromCategory
+  deleteCourseFromCategory,
+  getCourseById
 } from '../controllers/skillDevelopment.controller';
 import { asyncHandler } from '../utils/asyncHandler';
 
@@ -22,5 +23,6 @@ router.delete('/:id', asyncHandler(deleteSkillCategory));
 router.post('/:id/courses', asyncHandler(addCourseToCategory));
 router.put('/:categoryId/courses/:courseId', asyncHandler(updateCourseInCategory));
 router.delete('/:categoryId/courses/:courseId', asyncHandler(deleteCourseFromCategory));
+router.get('/course/:courseId', asyncHandler(getCourseById));
 
 export default router;

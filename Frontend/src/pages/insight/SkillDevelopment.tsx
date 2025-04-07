@@ -1,80 +1,76 @@
 import { BookOpen, Award, Clock, Star, ArrowRight, Users } from "lucide-react";
+import { useEffect, useState } from "react";
+
+interface Course {
+  _id: string;
+  title: string;
+  duration: string;
+  level: string;
+  rating: number;
+  students: number;
+  imageUrl: string;
+}
+
+interface SkillCategory {
+  _id: string;
+  title: string;
+  description: string;
+  courses: Course[];
+}
 
 const SkillDevelopmentPage = () => {
-  const skillCategories = [
-    {
-      title: "Technical Skills",
-      description: "Master the technical skills most in demand by employers",
-      courses: [
-        {
-          title: "Data Analysis Fundamentals",
-          duration: "6 weeks",
-          level: "Beginner",
-          rating: 4.8,
-          students: 1234,
-          imageUrl:
-            "https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&q=80&w=400",
-        },
-        {
-          title: "Cloud Computing Essentials",
-          duration: "8 weeks",
-          level: "Intermediate",
-          rating: 4.7,
-          students: 987,
-          imageUrl:
-            "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&q=80&w=400",
-        },
-      ],
-    },
-    {
-      title: "Soft Skills",
-      description: "Develop essential interpersonal and leadership skills",
-      courses: [
-        {
-          title: "Effective Communication",
-          duration: "4 weeks",
-          level: "All Levels",
-          rating: 4.9,
-          students: 2156,
-          imageUrl:
-            "https://images.unsplash.com/photo-1557804506-669a67965ba0?auto=format&fit=crop&q=80&w=400",
-        },
-        {
-          title: "Leadership & Team Management",
-          duration: "6 weeks",
-          level: "Intermediate",
-          rating: 4.8,
-          students: 1567,
-          imageUrl:
-            "https://images.unsplash.com/photo-1552664730-d307ca884978?auto=format&fit=crop&q=80&w=400",
-        },
-      ],
-    },
-    {
-      title: "Industry Certifications",
-      description: "Earn recognized certifications to boost your career",
-      courses: [
-        {
-          title: "Project Management Professional (PMP)",
-          duration: "12 weeks",
-          level: "Advanced",
-          rating: 4.9,
-          students: 876,
-          imageUrl:
-            "https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&q=80&w=400",
-        },
-        {
-          title: "AWS Cloud Practitioner",
-          duration: "8 weeks",
-          level: "Beginner",
-          rating: 4.7,
-          students: 1432,
-          imageUrl:
-            "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&q=80&w=400",
-        },
-      ],
-    },
+  const [skillCategories, setSkillCategories] = useState<SkillCategory[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Stats data
+  const stats = [
+    { icon: BookOpen, label: "Active Courses", value: "50+" },
+    { icon: Users, label: "Active Learners", value: "10K+" },
+    { icon: Award, label: "Certifications", value: "25+" },
+    { icon: Star, label: "Avg. Rating", value: "4.8" },
   ];
+
+  useEffect(() => {
+    const fetchSkillCategories = async () => {
+      try {
+        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/skill-development`);
+        if (!response.ok) {
+          throw new Error('Failed to fetch skill categories');
+        }
+        const data = await response.json();
+        setSkillCategories(data);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'An unknown error occurred');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchSkillCategories();
+  }, []);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 pt-20 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading skill development content...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 pt-20 flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-red-500 mb-4">Error loading content</div>
+          <p className="text-gray-600">{error}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 pt-20">
@@ -92,12 +88,7 @@ const SkillDevelopmentPage = () => {
 
         {/* Quick Stats */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
-          {[
-            { icon: BookOpen, label: "Active Courses", value: "50+" },
-            { icon: Users, label: "Active Learners", value: "10K+" },
-            { icon: Award, label: "Certifications", value: "25+" },
-            { icon: Star, label: "Avg. Rating", value: "4.8" },
-          ].map((stat, index) => (
+          {stats.map((stat, index) => (
             <div key={index} className="bg-white p-6 rounded-lg shadow-md">
               <div className="flex items-center">
                 <div className="p-2 bg-blue-100 rounded-lg">
@@ -116,9 +107,9 @@ const SkillDevelopmentPage = () => {
 
         {/* Skill Categories */}
         <div className="space-y-12">
-          {skillCategories.map((category, index) => (
+          {skillCategories.map((category) => (
             <div
-              key={index}
+              key={category._id}
               className="bg-white rounded-xl shadow-md overflow-hidden"
             >
               <div className="p-8">
@@ -128,8 +119,8 @@ const SkillDevelopmentPage = () => {
                 <p className="text-gray-600 mb-6">{category.description}</p>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  {category.courses.map((course, cIndex) => (
-                    <div key={cIndex} className="flex space-x-6">
+                  {category.courses.map((course) => (
+                    <div key={course._id} className="flex space-x-6">
                       <img
                         src={course.imageUrl}
                         alt={course.title}
@@ -154,7 +145,7 @@ const SkillDevelopmentPage = () => {
                           </div>
                         </div>
                         <a
-                          href={`/insights/skill-development/${course.title}`}
+                          href={`/insights/skill-development/${course._id}`}
                           className="inline-flex items-center text-blue-600 hover:text-blue-700"
                         >
                           Start learning <ArrowRight className="ml-2 h-4 w-4" />

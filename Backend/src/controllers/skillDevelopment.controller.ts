@@ -1,13 +1,6 @@
-// controllers/skillDevelopment.controller.ts
 import { Request, Response } from 'express';
-import { SkillCategory } from '../models/skillDevelopment.model';
+import { SkillCategory, ICourse } from '../models/skillDevelopment.model';
 import { asyncHandler } from '../utils/asyncHandler';
-
-// Helper type for course document with _id
-type CourseWithId = {
-  _id: any;
-  [key: string]: any;
-};
 
 // Get all skill categories with their courses
 export const getAllSkillCategories = asyncHandler(async (req: Request, res: Response) => {
@@ -91,7 +84,7 @@ export const updateCourseInCategory = asyncHandler(async (req: Request, res: Res
   }
 
   const courseIndex = category.courses.findIndex(
-    (c: CourseWithId) => c._id.toString() === courseId
+    (c) => c._id.toString() === courseId
   );
   
   if (courseIndex === -1) {
@@ -105,7 +98,7 @@ export const updateCourseInCategory = asyncHandler(async (req: Request, res: Res
     ...courseData
   };
 
-  category.courses[courseIndex] = updatedCourse;
+  category.courses[courseIndex] = updatedCourse as ICourse;
   const updatedCategory = await category.save();
 
   res.status(200).json(updatedCategory);
@@ -122,7 +115,7 @@ export const deleteCourseFromCategory = asyncHandler(async (req: Request, res: R
   }
 
   const courseIndex = category.courses.findIndex(
-    (c: CourseWithId) => c._id.toString() === courseId
+    (c) => c._id.toString() === courseId
   );
   
   if (courseIndex === -1) {
@@ -134,4 +127,23 @@ export const deleteCourseFromCategory = asyncHandler(async (req: Request, res: R
   const updatedCategory = await category.save();
 
   res.status(200).json(updatedCategory);
+});
+
+// Get a course by ID
+export const getCourseById = asyncHandler(async (req: Request, res: Response) => {
+  const { courseId } = req.params;
+
+  const category = await SkillCategory.findOne({ 'courses._id': courseId });
+  if (!category) {
+    res.status(404).json({ message: 'Course not found' });
+    return;
+  }
+
+  const course = category.courses.find((c) => c._id.toString() === courseId);
+  if (!course) {
+    res.status(404).json({ message: 'Course not found' });
+    return;
+  }
+
+  res.status(200).json(course);
 });

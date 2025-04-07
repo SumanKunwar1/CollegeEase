@@ -1,13 +1,25 @@
-import mongoose, { Document, Schema } from 'mongoose';
+import mongoose, { Document, Schema, Types } from 'mongoose';
 
 interface TrendDetail {
-  overview: string;
-  keyPoints: string[];
-  supportLinks: {
-    label: string;
-    url: string;
-  }[];
-}
+    overview: string;
+    keyPoints: string[];
+    supportLinks: {
+      label: string;
+      url: string;
+    }[];
+  }
+  interface Trend extends Document {
+    title: string;
+    description: string;
+    impact: string;
+    imageUrl?: string;
+    details: TrendDetail;
+  }
+  
+  interface TrendCategory extends Document {
+    category: string;
+    trends: Trend[];
+  }
 
 interface Trend {
   _id: string;
@@ -18,10 +30,6 @@ interface Trend {
   details: TrendDetail;
 }
 
-interface TrendCategory extends Document {
-  category: string;
-  trends: Trend[];
-}
 
 const trendDetailSchema = new Schema<TrendDetail>({
   overview: { type: String, required: true },

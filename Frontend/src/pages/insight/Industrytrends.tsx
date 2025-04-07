@@ -1,4 +1,5 @@
 import type React from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import {
   ArrowRight,
@@ -7,9 +8,88 @@ import {
   TrendingUp,
   Users,
 } from "lucide-react";
-import { industryTrends } from "../../data/industryTrends";
+
+interface TrendDetail {
+  overview: string;
+  keyPoints: string[];
+  supportLinks: {
+    label: string;
+    url: string;
+  }[];
+}
+
+interface Trend {
+  _id: string;
+  title: string;
+  description: string;
+  impact: string;
+  imageUrl?: string;
+  details: TrendDetail;
+}
+
+interface TrendCategory {
+  _id: string;
+  category: string;
+  trends: Trend[];
+}
 
 const IndustryTrends: React.FC = () => {
+  const [categories, setCategories] = useState<TrendCategory[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchTrends = async () => {
+      try {
+        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/industry-trends`);
+        const data = await response.json();
+        
+        if (!response.ok) {
+          throw new Error(data.message || 'Failed to fetch trends');
+        }
+
+        setCategories(data.data);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'An unknown error occurred');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTrends();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 pt-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+          <div className="flex justify-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 pt-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+          <div className="bg-white rounded-xl shadow-md p-8 text-center">
+            <h1 className="text-2xl font-bold text-gray-900 mb-4">Error loading trends</h1>
+            <p className="text-gray-600 mb-4">{error}</p>
+            <button 
+              onClick={() => window.location.reload()}
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+            >
+              Try Again
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 pt-20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -50,9 +130,9 @@ const IndustryTrends: React.FC = () => {
 
         {/* Trends by Category */}
         <div className="space-y-12">
-          {industryTrends.map((category, index) => (
+          {categories.map((category) => (
             <div
-              key={index}
+              key={category._id}
               className="bg-white rounded-xl shadow-md overflow-hidden"
             >
               <div className="p-8">
@@ -61,7 +141,7 @@ const IndustryTrends: React.FC = () => {
                 </h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   {category.trends.map((trend) => (
-                    <div key={trend.id} className="flex space-x-6">
+                    <div key={trend._id} className="flex space-x-6">
                       <img
                         src={trend.imageUrl || "/placeholder.svg"}
                         alt={trend.title}
@@ -76,7 +156,7 @@ const IndustryTrends: React.FC = () => {
                         </p>
                         <p className="text-sm text-blue-600">{trend.impact}</p>
                         <Link
-                          to={`/insights/industry-trends/${trend.id}`}
+                          to={`/insights/industry-trends/${trend._id}`}
                           className="inline-flex items-center mt-2 text-blue-600 hover:text-blue-700"
                         >
                           Learn more <ArrowRight className="ml-2 h-4 w-4" />

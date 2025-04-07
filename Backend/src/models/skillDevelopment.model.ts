@@ -1,5 +1,5 @@
 // models/skillDevelopment.model.ts
-import mongoose, { Document, Schema } from 'mongoose';
+import mongoose, { Document, Schema, Types } from 'mongoose';
 
 export interface ISyllabusItem {
   title: string;
@@ -20,14 +20,15 @@ export interface ICourseDetails {
 }
 
 export interface ICourse extends Document {
-  title: string;
-  duration: string;
-  level: string;
-  rating: number;
-  students: number;
-  imageUrl: string;
-  details: ICourseDetails;
-}
+    _id: Types.ObjectId;
+    title: string;
+    duration: string;
+    level: string;
+    rating: number;
+    students: number;
+    imageUrl: string;
+    details: ICourseDetails;
+  }
 
 export interface ISkillCategory extends Document {
   title: string;
@@ -54,14 +55,14 @@ const courseDetailsSchema = new Schema<ICourseDetails>({
 });
 
 const courseSchema = new Schema<ICourse>({
-  title: { type: String, required: true },
-  duration: { type: String, required: true },
-  level: { type: String, required: true },
-  rating: { type: Number, required: true, min: 0, max: 5 },
-  students: { type: Number, required: true, min: 0 },
-  imageUrl: { type: String, required: true },
-  details: courseDetailsSchema
-});
+    title: { type: String, required: true },
+    duration: { type: String, required: true },
+    level: { type: String, required: true },
+    rating: { type: Number, required: true, min: 0, max: 5 },
+    students: { type: Number, required: true, min: 0 },
+    imageUrl: { type: String, required: true },
+    details: courseDetailsSchema
+  }, { _id: true });  
 
 const skillCategorySchema = new Schema<ISkillCategory>({
   title: { type: String, required: true },

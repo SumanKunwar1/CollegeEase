@@ -1,17 +1,95 @@
 import { useParams } from "react-router-dom";
-import { skillCategories } from "../../data/skilldevelopment";
+import { useEffect, useState } from "react";
 import { Clock, Award, Star } from "lucide-react";
 
-const SkillDevelopmentDetails = () => {
-  const { courseTitle } = useParams<{ courseTitle: string }>();
+interface SyllabusItem {
+  title: string;
+  description: string[];
+  imageUrl?: string;
+}
 
-  // Find the course details
-  const course = skillCategories
-    .flatMap((category) => category.courses)
-    .find((course) => course.title === courseTitle);
+interface Instructor {
+  name: string;
+  bio: string;
+  imageUrl: string;
+}
+
+interface CourseDetails {
+  overview: string;
+  syllabus: SyllabusItem[];
+  instructor: Instructor;
+}
+
+interface Course {
+  _id: string;
+  title: string;
+  duration: string;
+  level: string;
+  rating: number;
+  students: number;
+  imageUrl: string;
+  details: CourseDetails;
+}
+
+const SkillDevelopmentDetails = () => {
+  const { courseId } = useParams<{ courseId: string }>();
+  const [course, setCourse] = useState<Course | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchCourseDetails = async () => {
+      try {
+        const response = await fetch(
+          `${import.meta.env.VITE_API_BASE_URL}/skill-development/course/${courseId}`
+        );
+        if (!response.ok) {
+          throw new Error('Failed to fetch course details');
+        }
+        const data = await response.json();
+        setCourse(data);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'An unknown error occurred');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    if (courseId) {
+      fetchCourseDetails();
+    }
+  }, [courseId]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 pt-20 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading course details...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 pt-20 flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-red-500 mb-4">Error loading course</div>
+          <p className="text-gray-600">{error}</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!course) {
-    return <div>Course not found</div>;
+    return (
+      <div className="min-h-screen bg-gray-50 pt-20 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-gray-600">Course not found</p>
+        </div>
+      </div>
+    );
   }
 
   return (

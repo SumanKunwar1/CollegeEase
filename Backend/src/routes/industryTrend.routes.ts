@@ -9,6 +9,7 @@ import {
   addTrendToCategory,
   updateTrendInCategory,
   deleteTrendFromCategory,
+  getTrendById,
 } from '../controllers/industryTrend.controller';
 
 const router = express.Router();
@@ -32,5 +33,7 @@ router
   .route('/:categoryId/trends/:trendId')
   .put(updateTrendInCategory)
   .delete(deleteTrendFromCategory);
+
+  router.get('/trend/:trendId', getTrendById);
 
 export default router;

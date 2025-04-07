@@ -193,3 +193,46 @@ export const deleteTrendFromCategory = asyncHandler(
     });
   }
 );
+
+// @desc    Get single trend by ID
+// @route   GET /api/v1/industry-trends/trend/:trendId
+// @access  Public
+export const getTrendById = asyncHandler(
+    async (req: Request, res: Response, next: NextFunction) => {
+      const categories = await IndustryTrendCategory.find({
+        'trends._id': req.params.trendId
+      });
+  
+      if (!categories || categories.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message: 'Trend not found'
+        });
+      }
+  
+      // Find the trend in all categories
+      let foundTrend = null;
+      for (const category of categories) {
+        const trend = category.trends.find(t => t._id.toString() === req.params.trendId);
+        if (trend) {
+          foundTrend = {
+            ...trend.toObject(),
+            category: category.category
+          };
+          break;
+        }
+      }
+  
+      if (!foundTrend) {
+        return res.status(404).json({
+          success: false,
+          message: 'Trend not found'
+        });
+      }
+  
+      res.status(200).json({
+        success: true,
+        data: foundTrend
+      });
+    }
+  );
