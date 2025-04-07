@@ -165,3 +165,24 @@ export const captureGroupPayment = async (req: Request, res: Response): Promise<
     });
   }
 };
+// Add this new function to your existing controller
+export const getGroupRegistrations = async (req: Request, res: Response): Promise<Response> => {
+  try {
+    const registrations = await GroupPayment.find()
+      .sort({ createdAt: -1 })
+      .lean()
+      .exec();
+
+    return res.status(200).json({
+      success: true,
+      data: registrations
+    });
+  } catch (error) {
+    console.error('Error fetching group registrations:', error);
+    return res.status(500).json({ 
+      success: false,
+      error: 'Failed to fetch group registrations',
+      message: error instanceof Error ? error.message : 'Internal server error'
+    });
+  }
+};

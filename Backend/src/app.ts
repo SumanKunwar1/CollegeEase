@@ -28,6 +28,7 @@ import bookingRouter from './routes/booking.routes';
 import becameMentorRouter from './routes/becameMentor.routes';
 import groupSessionRouter from './routes/groupSession.routes';
 import groupPaymentRouter from './routes/groupPayment.routes';
+import feedbackRoutes from './routes/feedback.routes';
 
 
 
@@ -91,6 +92,7 @@ app.use('/api/v1', bookingRouter);
 app.use('/api/v1/became-mentor', becameMentorRouter);
 app.use('/api/v1/group-sessions', groupSessionRouter);
 app.use('/api/v1/payments', groupPaymentRouter);
+app.use('/api/v1/feedback', feedbackRoutes);
 
 // Error handling
 app.use(errorHandler);

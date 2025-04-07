@@ -120,6 +120,9 @@ import AdminBookSession from "./pages/admin/montorship/AdminBookSession";
 import { AdminGroupSessionsPage } from "./pages/admin/montorship/AdminGroupSession";
 import { AdminResourcesPage } from "./pages/admin/montorship/AdminResources";
 import AdminMentorPage from "./pages/admin/montorship/AdminBecameMentor";
+import AdminGroupSessionRegistration from "./pages/admin/montorship/AdminGroupSessionRegistration";
+
+//scholarship
 
 import AdminScholarshipsPage from "./pages/admin/scholarship/AdminScholarship";
 import AdminScholarshipDetails from "./pages/admin/scholarship/AdminScholarshipDetails";
@@ -573,6 +576,18 @@ function AppContent() {
                 element={
                   <AdminLayout>
                     <AdminMentorPage />
+                  </AdminLayout>
+                }
+              />
+            }
+          />
+          <Route
+            path="/admin/mentorship/group-session-registration"
+            element={
+              <PrivateRoute
+                element={
+                  <AdminLayout>
+                    <AdminGroupSessionRegistration />
                   </AdminLayout>
                 }
               />

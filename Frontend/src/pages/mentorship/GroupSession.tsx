@@ -3,23 +3,11 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "../../components/ui/button";
 import { useState, useEffect } from "react";
 import axios from "axios";
+import { toast } from "react-toastify";
 
-// Configure axios to use the base URL from environment variables
 const apiClient = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL,
 });
-
-interface SessionFeature {
-  title: string;
-  description: string;
-  icon: string;
-}
-
-interface SessionReview {
-  author: string;
-  text: string;
-  rating: number;
-}
 
 interface GroupSession {
   _id: string;
@@ -33,77 +21,72 @@ interface GroupSession {
   tags: string[];
   imageUrl: string;
   description: string;
-  features: SessionFeature[];
-  reviews: SessionReview[];
+  features: Array<{
+    title: string;
+    description: string;
+    icon: string;
+  }>;
+}
+
+interface Feedback {
+  _id: string;
+  sessionId: string;
+  name: string;
+  rating: number;
+  feedback: string;
+  createdAt: string;
 }
 
 const GroupSessions = () => {
   const [sessions, setSessions] = useState<GroupSession[]>([]);
+  const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
-    const fetchSessions = async () => {
+    const fetchData = async () => {
       try {
-        const response = await apiClient.get("/group-sessions");
-        setSessions(response.data);
+        setIsLoading(true);
+        
+        // Fetch sessions
+        const sessionsResponse = await apiClient.get("/group-sessions");
+        setSessions(sessionsResponse.data);
+        
+        // Fetch feedbacks
+        const feedbackResponse = await apiClient.get("/feedback");
+        if (feedbackResponse.data && feedbackResponse.data.data) {
+          setFeedbacks(feedbackResponse.data.data);
+        }
+        
         setIsLoading(false);
       } catch (err) {
-        console.error("Error fetching sessions:", err);
-        setError("Failed to load group sessions. Please try again later.");
+        console.error("Error fetching data:", err);
+        setError("Failed to load data. Please try again later.");
         setIsLoading(false);
       }
     };
 
-    fetchSessions();
+    fetchData();
   }, []);
 
   if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gray-50 pt-20 flex items-center justify-center">
-        <p>Loading sessions...</p>
-      </div>
-    );
+    return <div className="min-h-screen bg-gray-50 pt-20 flex items-center justify-center">
+      <p>Loading sessions...</p>
+    </div>;
   }
 
   if (error) {
-    return (
-      <div className="min-h-screen bg-gray-50 pt-20 flex items-center justify-center">
-        <p className="text-red-500">{error}</p>
-      </div>
-    );
+    return <div className="min-h-screen bg-gray-50 pt-20 flex items-center justify-center">
+      <p className="text-red-500">{error}</p>
+    </div>;
   }
 
-  // Extracting only the required data from sessions
-  const upcomingSessions = sessions.map(
-    ({
-      _id,
-      title,
-      mentor,
-      date,
-      time,
-      duration,
-      participants,
-      price,
-      tags,
-      imageUrl,
-    }) => ({
-      id: _id,
-      title,
-      mentor,
-      date,
-      time,
-      duration,
-      participants,
-      price,
-      tags,
-      imageUrl,
-    })
-  );
-
-  // Define features list based on the first session's features (or empty array)
-  const featuresList = sessions.length > 0 ? sessions[0].features : [];
+  // Get session title by ID
+  const getSessionTitle = (sessionId: string) => {
+    const session = sessions.find(s => s._id === sessionId);
+    return session ? session.title : "Group Session";
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 pt-20">
@@ -114,145 +97,73 @@ const GroupSessions = () => {
             Join Expert-Led Group Sessions
           </h1>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            Learn together in interactive group sessions led by experienced
-            mentors.
+            Learn together in interactive group sessions led by experienced mentors.
           </p>
         </div>
 
-        {/* Features Grid */}
-        {featuresList.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-16">
-            {featuresList.map((feature, index) => (
-              <div key={index} className="bg-white rounded-xl shadow-md p-6">
-                <div className="flex flex-col items-center text-center">
-                  <div className="p-3 bg-blue-100 rounded-lg mb-4">
-                    {feature.icon === "Users" && <Users className="h-6 w-6 text-blue-600" />}
-                    {feature.icon === "Calendar" && <Calendar className="h-6 w-6 text-blue-600" />}
-                    {feature.icon === "Clock" && <Clock className="h-6 w-6 text-blue-600" />}
-                    {feature.icon === "Star" && <Star className="h-6 w-6 text-blue-600" />}
-                  </div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                    {feature.title}
-                  </h3>
-                  <p className="text-gray-600">{feature.description}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
         {/* Upcoming Sessions */}
-        <h2 className="text-2xl font-semibold text-gray-900 mb-8">
-          Upcoming Sessions
-        </h2>
-        {upcomingSessions.length > 0 ? (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {upcomingSessions.map((session) => (
-              <div
-                key={session.id}
-                className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-duration-300"
-              >
-                <img
-                  src={session.imageUrl || "/placeholder.svg"}
-                  alt={session.title}
-                  className="w-full h-48 object-cover"
-                />
-                <div className="p-6">
-                  <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                    {session.title}
-                  </h3>
-                  <p className="text-gray-600 mb-4">Led by {session.mentor}</p>
-
-                  <div className="space-y-3 mb-4">
-                    <div className="flex items-center text-gray-600">
-                      <Calendar className="h-4 w-4 mr-2" />
-                      {session.date}
-                    </div>
-                    <div className="flex items-center text-gray-600">
-                      <Clock className="h-4 w-4 mr-2" />
-                      {session.time} ({session.duration})
-                    </div>
-                    <div className="flex items-center text-gray-600">
-                      <Users className="h-4 w-4 mr-2" />
-                      {session.participants} participants max
-                    </div>
+        <h2 className="text-2xl font-semibold text-gray-900 mb-8">Upcoming Sessions</h2>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {sessions.map((session) => (
+            <div key={session._id} className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-duration-300">
+              <img src={session.imageUrl || "/placeholder.svg"} alt={session.title} className="w-full h-48 object-cover" />
+              <div className="p-6">
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">{session.title}</h3>
+                <p className="text-gray-600 mb-4">Led by {session.mentor}</p>
+                <div className="space-y-3 mb-4">
+                  <div className="flex items-center text-gray-600">
+                    <Calendar className="h-4 w-4 mr-2" />
+                    {session.date}
                   </div>
-
-                  <div className="flex flex-wrap gap-2 mb-6">
-                    {session.tags.map((tag, index) => (
-                      <span
-                        key={index}
-                        className="px-2 py-1 bg-blue-50 text-blue-700 rounded-full text-xs"
-                      >
-                        {tag}
-                      </span>
-                    ))}
+                  <div className="flex items-center text-gray-600">
+                    <Clock className="h-4 w-4 mr-2" />
+                    {session.time} ({session.duration})
                   </div>
-
-                  <div className="flex items-center justify-between">
-                    <span className="text-2xl font-bold text-gray-900">
-                      {session.price}
-                    </span>
-                    <button
-                      onClick={() => navigate(`/mentorship/group-session/${session.id}`)}
-                      className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors duration-200"
-                    >
-                      View
-                    </button>
+                  <div className="flex items-center text-gray-600">
+                    <Users className="h-4 w-4 mr-2" />
+                    {session.participants} participants max
                   </div>
                 </div>
+                <Button onClick={() => navigate(`/mentorship/group-session/${session._id}`)} className="w-full">
+                  View Details
+                </Button>
               </div>
-            ))}
-          </div>
-        ) : (
-          <p className="text-gray-500 text-center py-8">
-            No upcoming sessions available at the moment.
-          </p>
-        )}
-      </div>
-      
-      {/* Past Session Reviews */}
-      <div className="mt-16 pl-8">
-        <h2 className="text-2xl font-semibold text-gray-900 mb-8">
-          What Participants Say
-        </h2>
+            </div>
+          ))}
+        </div>
 
-        {sessions.flatMap(session => session.reviews).length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {sessions
-              .flatMap((session) => session.reviews)
-              .map((review, index) => (
-                <div key={index} className="bg-white rounded-xl shadow-md p-6">
-                  <div className="flex items-center mb-4">
-                    {[...Array(review.rating)].map((_, i) => (
+        {/* Feedback Section */}
+        <div className="mt-16">
+          <h2 className="text-2xl font-semibold text-gray-900 mb-8">What Participants Say</h2>
+          
+          {feedbacks.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              {feedbacks.slice(0, 6).map((feedback) => (
+                <div key={feedback._id} className="bg-white rounded-xl shadow-md p-6">
+                  <div className="flex items-center mb-2">
+                    {[...Array(5)].map((_, i) => (
                       <Star
                         key={i}
-                        className="h-4 w-4 text-yellow-400 fill-current"
+                        className={`h-4 w-4 ${i < feedback.rating ? "text-yellow-400 fill-current" : "text-gray-300"}`}
                       />
                     ))}
                   </div>
-                  <p className="text-gray-600 mb-4">"{review.text}"</p>
-                  <p className="font-semibold text-gray-900">{review.author}</p>
+                  <p className="text-sm text-gray-500 mb-2">{getSessionTitle(feedback.sessionId)}</p>
+                  <p className="text-gray-600 mb-4">"{feedback.feedback}"</p>
+                  <p className="font-semibold text-gray-900">{feedback.name}</p>
                 </div>
               ))}
-          </div>
-        ) : (
-          <p className="text-gray-500 mb-8">No reviews available yet.</p>
-        )}
+            </div>
+          ) : (
+            <p className="text-gray-500">No feedback available yet.</p>
+          )}
 
-        <div className="bg-indigo-50 rounded-lg p-8 text-center">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">
-            Share Your Group Session Experience!
-          </h2>
-          <p className="text-gray-600 mb-6">
-            Have you recently attended a group session? Share your experience to help others!
-          </p>
-          <Button
-            onClick={() => navigate(`/mentorship/group-session/feedback`)}
-            size="lg"
-          >
-            Submit Your Group Session Experience
-          </Button>
+          <div className="bg-indigo-50 rounded-lg p-8 text-center mt-12">
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">Share Your Experience!</h2>
+            <Button onClick={() => navigate("/mentorship/group-session/feedback")} size="lg">
+              Submit Feedback
+            </Button>
+          </div>
         </div>
       </div>
     </div>
