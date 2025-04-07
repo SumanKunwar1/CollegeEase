@@ -29,6 +29,7 @@ import becameMentorRouter from './routes/becameMentor.routes';
 import groupSessionRouter from './routes/groupSession.routes';
 import groupPaymentRouter from './routes/groupPayment.routes';
 import feedbackRoutes from './routes/feedback.routes';
+import resourceRouter from './routes/resource.routes';
 
 
 
@@ -93,6 +94,7 @@ app.use('/api/v1/became-mentor', becameMentorRouter);
 app.use('/api/v1/group-sessions', groupSessionRouter);
 app.use('/api/v1/payments', groupPaymentRouter);
 app.use('/api/v1/feedback', feedbackRoutes);
+app.use('/api/v1/resources', resourceRouter);
 
 // Error handling
 app.use(errorHandler);

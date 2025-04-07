@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "../../components/ui/button";
 import { useState, useEffect } from "react";
 import axios from "axios";
-import { toast } from "react-toastify";
 
 const apiClient = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL,
