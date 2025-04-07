@@ -1,75 +1,31 @@
-"use client";
+"use client"
 
-import type React from "react";
-import { useState, useEffect } from "react";
-import { Briefcase, Plus, Trash, Edit, Search, X } from "lucide-react";
+import { useState, useEffect } from "react"
+import { Briefcase, Plus, Trash, Edit, Search, X } from "lucide-react"
 
 interface Job {
-  id: number;
-  title: string;
-  company: string;
-  location: string;
-  type: string;
-  description: string;
-  salary: string;
-  requirements: string[];
-  responsibilities: string[];
-  whyJoinUs: string;
+  _id: string
+  title: string
+  company: string
+  location: string
+  type: string
+  description: string
+  salary: string
+  requirements: string[]
+  responsibilities: string[]
+  whyJoinUs: string
 }
 
 export function AdminJobAndPlacementPage() {
-  const [jobs, setJobs] = useState<Job[]>([
-    {
-      id: 1,
-      title: "Software Engineer",
-      company: "Tech Innovators Inc.",
-      location: "San Francisco, CA",
-      type: "Full-time",
-      description: "Exciting opportunity for a skilled software engineer...",
-      salary: "$120,000 - $150,000",
-      requirements: [
-        "5+ years of experience with JavaScript",
-        "Experience with React and Node.js",
-        "Bachelor's degree in Computer Science or related field",
-      ],
-      responsibilities: [
-        "Develop and maintain web applications",
-        "Collaborate with cross-functional teams",
-        "Optimize application performance",
-      ],
-      whyJoinUs:
-        "Great benefits. Flexible work hours. Innovative projects. Career growth opportunities.",
-    },
-    {
-      id: 2,
-      title: "Data Scientist Intern",
-      company: "Data Insights Co.",
-      location: "New York, NY",
-      type: "Internship",
-      description: "Join our data science team for a summer internship...",
-      salary: "$30/hour",
-      requirements: [
-        "Currently pursuing a degree in Data Science, Statistics, or related field",
-        "Knowledge of Python and data analysis libraries",
-        "Strong analytical skills",
-      ],
-      responsibilities: [
-        "Assist in data collection and cleaning",
-        "Perform exploratory data analysis",
-        "Create data visualizations",
-      ],
-      whyJoinUs:
-        "Mentorship from industry experts. Real-world projects. Networking opportunities.",
-    },
-  ]);
-
-  const [searchQuery, setSearchQuery] = useState("");
-  const [showAddForm, setShowAddForm] = useState(false);
-  const [editingJob, setEditingJob] = useState<Job | null>(null);
-  const [successMessage, setSuccessMessage] = useState("");
+  const [jobs, setJobs] = useState<Job[]>([])
+  const [searchQuery, setSearchQuery] = useState("")
+  const [showAddForm, setShowAddForm] = useState(false)
+  const [editingJob, setEditingJob] = useState<Job | null>(null)
+  const [successMessage, setSuccessMessage] = useState("")
+  const [loading, setLoading] = useState(true)
 
   // Form state
-  const [formData, setFormData] = useState<Omit<Job, "id">>({
+  const [formData, setFormData] = useState<Omit<Job, "_id">>({
     title: "",
     company: "",
     location: "",
@@ -79,7 +35,29 @@ export function AdminJobAndPlacementPage() {
     requirements: [],
     responsibilities: [],
     whyJoinUs: "",
-  });
+  })
+
+  const [newRequirement, setNewRequirement] = useState("")
+  const [newResponsibility, setNewResponsibility] = useState("")
+
+  // Fetch jobs on component mount
+  useEffect(() => {
+    const fetchJobs = async () => {
+      try {
+        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/jobs`)
+        const data = await response.json()
+        if (data.success) {
+          setJobs(data.data)
+        }
+      } catch (error) {
+        console.error("Error fetching jobs:", error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchJobs()
+  }, [])
 
   // Reset form when switching between add/edit modes
   useEffect(() => {
@@ -94,7 +72,7 @@ export function AdminJobAndPlacementPage() {
         requirements: [...editingJob.requirements],
         responsibilities: [...editingJob.responsibilities],
         whyJoinUs: editingJob.whyJoinUs,
-      });
+      })
     } else if (!showAddForm) {
       setFormData({
         title: "",
@@ -106,84 +84,149 @@ export function AdminJobAndPlacementPage() {
         requirements: [],
         responsibilities: [],
         whyJoinUs: "",
-      });
+      })
     }
-  }, [editingJob, showAddForm]);
+  }, [editingJob, showAddForm])
 
   const filteredJobs = jobs.filter(
     (job) =>
       job.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       job.company.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      job.location.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+      job.location.toLowerCase().includes(searchQuery.toLowerCase()),
+  )
 
-  const handleInputChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >
-  ) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value } = e.target
+    setFormData((prev) => ({ ...prev, [name]: value }))
+  }
 
-  const handleListInputChange = (
-    e: React.ChangeEvent<HTMLTextAreaElement>,
-    field: "requirements" | "responsibilities"
-  ) => {
-    const items = e.target.value
-      .split(",")
-      .map((item) => item.trim())
-      .filter((item) => item !== "");
-    setFormData((prev) => ({ ...prev, [field]: items }));
-  };
+  const handleAddRequirement = () => {
+    if (newRequirement.trim() !== "") {
+      setFormData((prev) => ({
+        ...prev,
+        requirements: [...prev.requirements, newRequirement.trim()],
+      }))
+      setNewRequirement("")
+    }
+  }
 
-  const handleAddJob = () => {
-    const newId =
-      jobs.length > 0 ? Math.max(...jobs.map((job) => job.id)) + 1 : 1;
-    const newJob = { id: newId, ...formData };
+  const handleAddResponsibility = () => {
+    if (newResponsibility.trim() !== "") {
+      setFormData((prev) => ({
+        ...prev,
+        responsibilities: [...prev.responsibilities, newResponsibility.trim()],
+      }))
+      setNewResponsibility("")
+    }
+  }
 
-    setJobs([...jobs, newJob]);
-    setShowAddForm(false);
-    setSuccessMessage("Job listing added successfully!");
+  const handleRemoveRequirement = (index: number) => {
+    setFormData((prev) => ({
+      ...prev,
+      requirements: prev.requirements.filter((_, i) => i !== index),
+    }))
+  }
+
+  const handleRemoveResponsibility = (index: number) => {
+    setFormData((prev) => ({
+      ...prev,
+      responsibilities: prev.responsibilities.filter((_, i) => i !== index),
+    }))
+  }
+
+  const handleAddJob = async () => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/jobs`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        setJobs([...jobs, data.data])
+        setShowAddForm(false)
+        setSuccessMessage("Job listing added successfully!")
+      }
+    } catch (error) {
+      console.error("Error adding job:", error)
+      setSuccessMessage("Failed to add job listing")
+    }
 
     setTimeout(() => {
-      setSuccessMessage("");
-    }, 3000);
-  };
+      setSuccessMessage("")
+    }, 3000)
+  }
 
-  const handleUpdateJob = () => {
-    if (!editingJob) return;
+  const handleUpdateJob = async () => {
+    if (!editingJob) return
 
-    setJobs(
-      jobs.map((job) =>
-        job.id === editingJob.id ? { ...job, ...formData } : job
-      )
-    );
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/jobs/${editingJob._id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      })
 
-    setEditingJob(null);
-    setSuccessMessage("Job listing updated successfully!");
+      const data = await response.json()
+
+      if (data.success) {
+        setJobs(jobs.map((job) => (job._id === editingJob._id ? data.data : job)))
+        setEditingJob(null)
+        setSuccessMessage("Job listing updated successfully!")
+      }
+    } catch (error) {
+      console.error("Error updating job:", error)
+      setSuccessMessage("Failed to update job listing")
+    }
 
     setTimeout(() => {
-      setSuccessMessage("");
-    }, 3000);
-  };
+      setSuccessMessage("")
+    }, 3000)
+  }
 
-  const handleDeleteJob = (id: number) => {
-    setJobs(jobs.filter((job) => job.id !== id));
-    setSuccessMessage("Job listing deleted successfully!");
+  const handleDeleteJob = async (id: string) => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/jobs/${id}`, {
+        method: 'DELETE',
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        setJobs(jobs.filter((job) => job._id !== id))
+        setSuccessMessage("Job listing deleted successfully!")
+      }
+    } catch (error) {
+      console.error("Error deleting job:", error)
+      setSuccessMessage("Failed to delete job listing")
+    }
 
     setTimeout(() => {
-      setSuccessMessage("");
-    }, 3000);
-  };
+      setSuccessMessage("")
+    }, 3000)
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-6 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-lg text-gray-600">Loading jobs...</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto">
         <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">
-            Admin: Manage Jobs & Placements
-          </h1>
+          <h1 className="text-3xl font-bold text-gray-900">Admin: Manage Jobs & Placements</h1>
           <div className="flex gap-4">
             <button
               onClick={() => setShowAddForm(true)}
@@ -198,10 +241,7 @@ export function AdminJobAndPlacementPage() {
         {successMessage && (
           <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-6">
             <span className="block sm:inline">{successMessage}</span>
-            <button
-              className="absolute top-0 bottom-0 right-0 px-4 py-3"
-              onClick={() => setSuccessMessage("")}
-            >
+            <button className="absolute top-0 bottom-0 right-0 px-4 py-3" onClick={() => setSuccessMessage("")}>
               <X size={16} />
             </button>
           </div>
@@ -224,14 +264,10 @@ export function AdminJobAndPlacementPage() {
         {/* Add/Edit Form */}
         {(showAddForm || editingJob) && (
           <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-            <h2 className="text-xl font-semibold mb-4">
-              {editingJob ? "Edit Job Listing" : "Add New Job Listing"}
-            </h2>
+            <h2 className="text-xl font-semibold mb-4">{editingJob ? "Edit Job Listing" : "Add New Job Listing"}</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Job Title
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Job Title</label>
                 <input
                   type="text"
                   name="title"
@@ -242,9 +278,7 @@ export function AdminJobAndPlacementPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Company
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Company</label>
                 <input
                   type="text"
                   name="company"
@@ -255,9 +289,7 @@ export function AdminJobAndPlacementPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Location
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
                 <input
                   type="text"
                   name="location"
@@ -268,9 +300,7 @@ export function AdminJobAndPlacementPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Job Type
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Job Type</label>
                 <select
                   name="type"
                   value={formData.type}
@@ -286,9 +316,7 @@ export function AdminJobAndPlacementPage() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Salary
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Salary</label>
                 <input
                   type="text"
                   name="salary"
@@ -299,9 +327,7 @@ export function AdminJobAndPlacementPage() {
                 />
               </div>
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Description
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
                 <textarea
                   name="description"
                   value={formData.description}
@@ -312,33 +338,74 @@ export function AdminJobAndPlacementPage() {
                 ></textarea>
               </div>
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Requirements (comma-separated)
-                </label>
-                <textarea
-                  value={formData.requirements.join(", ")}
-                  onChange={(e) => handleListInputChange(e, "requirements")}
-                  rows={3}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="e.g., 5+ years of experience with JavaScript, Experience with React and Node.js"
-                ></textarea>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Requirements</label>
+                <div className="flex mb-2">
+                  <input
+                    type="text"
+                    value={newRequirement}
+                    onChange={(e) => setNewRequirement(e.target.value)}
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-l-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="e.g., 5+ years of experience with JavaScript"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleAddRequirement}
+                    className="bg-blue-600 text-white px-4 py-2 rounded-r-md hover:bg-blue-700"
+                  >
+                    Add
+                  </button>
+                </div>
+                <div className="mt-2 space-y-2">
+                  {formData.requirements.map((req, index) => (
+                    <div key={index} className="flex items-center bg-gray-50 p-2 rounded">
+                      <span className="flex-1">{req}</span>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveRequirement(index)}
+                        className="text-red-500 hover:text-red-700"
+                      >
+                        <Trash size={16} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Responsibilities</label>
+                <div className="flex mb-2">
+                  <input
+                    type="text"
+                    value={newResponsibility}
+                    onChange={(e) => setNewResponsibility(e.target.value)}
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-l-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="e.g., Develop and maintain web applications"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleAddResponsibility}
+                    className="bg-blue-600 text-white px-4 py-2 rounded-r-md hover:bg-blue-700"
+                  >
+                    Add
+                  </button>
+                </div>
+                <div className="mt-2 space-y-2">
+                  {formData.responsibilities.map((resp, index) => (
+                    <div key={index} className="flex items-center bg-gray-50 p-2 rounded">
+                      <span className="flex-1">{resp}</span>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveResponsibility(index)}
+                        className="text-red-500 hover:text-red-700"
+                      >
+                        <Trash size={16} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
               </div>
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Responsibilities (comma-separated)
-                </label>
-                <textarea
-                  value={formData.responsibilities.join(", ")}
-                  onChange={(e) => handleListInputChange(e, "responsibilities")}
-                  rows={3}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="e.g., Develop and maintain web applications, Collaborate with cross-functional teams"
-                ></textarea>
-              </div>
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Why Join Us
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Why Join Us</label>
                 <textarea
                   name="whyJoinUs"
                   value={formData.whyJoinUs}
@@ -347,16 +414,14 @@ export function AdminJobAndPlacementPage() {
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="e.g., Great benefits. Flexible work hours. Innovative projects."
                 ></textarea>
-                <p className="text-sm text-gray-500 mt-1">
-                  Separate points with periods for automatic formatting
-                </p>
+                <p className="text-sm text-gray-500 mt-1">Separate points with periods for automatic formatting</p>
               </div>
             </div>
             <div className="flex justify-end mt-6 gap-4">
               <button
                 onClick={() => {
-                  setShowAddForm(false);
-                  setEditingJob(null);
+                  setShowAddForm(false)
+                  setEditingJob(null)
                 }}
                 className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
               >
@@ -376,13 +441,11 @@ export function AdminJobAndPlacementPage() {
         <div className="space-y-6">
           {filteredJobs.length === 0 ? (
             <div className="bg-white rounded-lg shadow-md p-6 text-center">
-              <p className="text-gray-500">
-                No job listings found. Try a different search or add a new job.
-              </p>
+              <p className="text-gray-500">No job listings found. Try a different search or add a new job.</p>
             </div>
           ) : (
             filteredJobs.map((job) => (
-              <div key={job.id} className="bg-white rounded-lg shadow-md p-6">
+              <div key={job._id} className="bg-white rounded-lg shadow-md p-6">
                 <div className="flex justify-between items-start">
                   <div>
                     <div className="flex items-center gap-2">
@@ -401,7 +464,7 @@ export function AdminJobAndPlacementPage() {
                       <Edit size={18} />
                     </button>
                     <button
-                      onClick={() => handleDeleteJob(job.id)}
+                      onClick={() => handleDeleteJob(job._id)}
                       className="p-2 text-red-600 hover:bg-red-50 rounded-md"
                     >
                       <Trash size={18} />
@@ -421,9 +484,7 @@ export function AdminJobAndPlacementPage() {
                     </ul>
                   </div>
                   <div>
-                    <h4 className="font-medium text-gray-900">
-                      Responsibilities:
-                    </h4>
+                    <h4 className="font-medium text-gray-900">Responsibilities:</h4>
                     <ul className="mt-1 list-disc list-inside text-gray-600">
                       {job.responsibilities.map((resp, index) => (
                         <li key={index}>{resp}</li>
@@ -437,5 +498,6 @@ export function AdminJobAndPlacementPage() {
         </div>
       </div>
     </div>
-  );
+  )
 }
+

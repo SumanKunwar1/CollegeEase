@@ -31,6 +31,8 @@ import groupPaymentRouter from './routes/groupPayment.routes';
 import feedbackRoutes from './routes/feedback.routes';
 import resourceRouter from './routes/resource.routes';
 import resourceRequestRouter from './routes/resourceRequest.routes';
+import jobRouter from './routes/job.routes';
+
 
 
 
@@ -96,6 +98,7 @@ app.use('/api/v1/payments', groupPaymentRouter);
 app.use('/api/v1/feedback', feedbackRoutes);
 app.use('/api/v1/resources', resourceRouter);
 app.use('/api/v1/resource-requests', resourceRequestRouter);
+app.use('/api/v1/jobs', jobRouter);
 
 // Error handling
 app.use(errorHandler);

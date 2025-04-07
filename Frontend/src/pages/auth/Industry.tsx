@@ -13,8 +13,8 @@ const navigation = [
 ];
 
 export function IndustryDashboard() {
-  const { id } = useParams();
   const location = useLocation();
+  const { organizationName } = useParams<{ organizationName: string }>();
   const currentPath = location.pathname.split("/").pop();
 
   const renderContent = () => {
@@ -41,7 +41,7 @@ export function IndustryDashboard() {
             return (
               <Link
                 key={item.name}
-                to={`/dashboard/industry/${id}/${item.href}`}
+                to={`/dashboard/industry/${organizationName}/${item.href}`}
                 className={`
                   flex items-center px-1 py-4 text-sm font-medium border-b-2 
                   ${
