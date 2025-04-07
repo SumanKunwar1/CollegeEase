@@ -45,4 +45,3 @@ export const getApplicationsByJob = asyncHandler(async (req: Request, res: Respo
   const applications = await ApplicationForm.find({ jobId: req.params.jobId }).sort({ createdAt: -1 });
   res.status(200).json({ success: true, data: applications });
 });
-

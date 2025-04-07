@@ -7,7 +7,7 @@ type ToastVariant = "default" | "destructive" | "success";
 
 type EnhancedToastProps = {
   title?: string;
-  description?: string;
+  description?: string | React.ReactNode; 
   action?: React.ReactNode;
   duration?: number;
   id?: string;
