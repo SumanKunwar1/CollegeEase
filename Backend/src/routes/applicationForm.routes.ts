@@ -1,17 +1,20 @@
+// applicationForm.routes.ts
 import express from 'express';
 import {
   submitApplication,
-  getApplications,
-  getApplicationsByJob
+  getApplicationsByCompany,
+  updateApplicationStatus
 } from '../controllers/applicationForm.controller';
 
 const router = express.Router();
 
 router.route('/')
-  .post(submitApplication)
-  .get(getApplications);
+  .post(submitApplication);
 
-router.route('/job/:jobId')
-  .get(getApplicationsByJob);
+router.route('/company/:companyName')
+  .get(getApplicationsByCompany);
+
+router.route('/:id/status')
+  .patch(updateApplicationStatus);
 
 export default router;

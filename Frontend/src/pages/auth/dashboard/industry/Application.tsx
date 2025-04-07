@@ -1,44 +1,54 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useParams } from "react-router-dom";
 import { DataTable } from "../../../../components/auth/DataTable";
 import { Eye, CheckCircle, XCircle, Calendar } from "lucide-react";
 import { exportToExcel } from "../../../../lib/export";
 import toast from "react-hot-toast";
+import axios from "axios";
 
 interface Application {
-  id: string;
-  candidateName: string;
+  _id: string;
+  name: string;
+  email: string;
   jobTitle: string;
-  appliedDate: string;
-  experience: string;
-  status: "pending" | "shortlisted" | "rejected" | "hired";
-  resume: string;
+  jobId: string;
+  createdAt: string;
+  educationLevel: string;
+  status: "pending" | "reviewed" | "accepted" | "rejected";
+  coverLetter: string;
+  phone: string;
+  address: string;
 }
 
 export function IndustryApplications() {
-  const [applications, setApplications] = useState<Application[]>([
-    {
-      id: "1",
-      candidateName: "John Smith",
-      jobTitle: "Senior Software Engineer",
-      appliedDate: "2024-03-15",
-      experience: "6 years",
-      status: "pending",
-      resume: "john-smith-resume.pdf",
-    },
-    {
-      id: "2",
-      candidateName: "Sarah Johnson",
-      jobTitle: "Product Manager",
-      appliedDate: "2024-03-14",
-      experience: "4 years",
-      status: "shortlisted",
-      resume: "sarah-johnson-resume.pdf",
-    },
-  ]);
+  const { organizationName } = useParams<{ organizationName: string }>();
+  const [applications, setApplications] = useState<Application[]>([]);
+  const [, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchApplications = async () => {
+      try {
+        setLoading(true);
+        const response = await axios.get(
+          `${import.meta.env.VITE_API_BASE_URL}/application-forms/company/${organizationName}`
+        );
+        setApplications(response.data.data);
+      } catch (error) {
+        console.error("Error fetching applications:", error);
+        toast.error("Failed to load applications");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (organizationName) {
+      fetchApplications();
+    }
+  }, [organizationName]);
 
   const columns = [
     {
-      accessorKey: "candidateName",
+      accessorKey: "name",
       header: "Candidate Name",
     },
     {
@@ -46,12 +56,17 @@ export function IndustryApplications() {
       header: "Job Title",
     },
     {
-      accessorKey: "appliedDate",
-      header: "Applied Date",
+      accessorKey: "email",
+      header: "Email",
     },
     {
-      accessorKey: "experience",
-      header: "Experience",
+      accessorKey: "createdAt",
+      header: "Applied Date",
+      cell: ({ row }: any) => new Date(row.original.createdAt).toLocaleDateString(),
+    },
+    {
+      accessorKey: "educationLevel",
+      header: "Education Level",
     },
     {
       accessorKey: "status",
@@ -59,9 +74,9 @@ export function IndustryApplications() {
       cell: ({ row }: any) => (
         <span
           className={`px-2 py-1 rounded-full text-xs font-medium ${
-            row.original.status === "hired"
-              ? "bg-green-100 text-green-800"
-              : row.original.status === "shortlisted"
+            row.original.status === "accepted"
+              ? "bg-blue-100 text-blue-800"
+              : row.original.status === "reviewed"
               ? "bg-blue-100 text-blue-800"
               : row.original.status === "rejected"
               ? "bg-red-100 text-red-800"
@@ -86,16 +101,14 @@ export function IndustryApplications() {
           {row.original.status === "pending" && (
             <>
               <button
-                onClick={() =>
-                  handleUpdateStatus(row.original.id, "shortlisted")
-                }
-                className="p-1 hover:bg-gray-100 rounded-full text-green-600"
-                title="Shortlist"
+                onClick={() => handleUpdateStatus(row.original._id, "reviewed")}
+                className="p-1 hover:bg-gray-100 rounded-full text-blue-600"
+                title="Mark as Reviewed"
               >
                 <CheckCircle className="w-4 h-4" />
               </button>
               <button
-                onClick={() => handleUpdateStatus(row.original.id, "rejected")}
+                onClick={() => handleUpdateStatus(row.original._id, "rejected")}
                 className="p-1 hover:bg-gray-100 rounded-full text-red-600"
                 title="Reject"
               >
@@ -103,14 +116,23 @@ export function IndustryApplications() {
               </button>
             </>
           )}
-          {row.original.status === "shortlisted" && (
-            <button
-              onClick={() => handleScheduleInterview(row.original)}
-              className="p-1 hover:bg-gray-100 rounded-full text-blue-600"
-              title="Schedule Interview"
-            >
-              <Calendar className="w-4 h-4" />
-            </button>
+          {row.original.status === "reviewed" && (
+            <>
+              <button
+                onClick={() => handleUpdateStatus(row.original._id, "accepted")}
+                className="p-1 hover:bg-gray-100 rounded-full text-blue-600"
+                title="Accept"
+              >
+                <CheckCircle className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => handleScheduleInterview(row.original)}
+                className="p-1 hover:bg-gray-100 rounded-full text-blue-600"
+                title="Schedule Interview"
+              >
+                <Calendar className="w-4 h-4" />
+              </button>
+            </>
           )}
         </div>
       ),
@@ -118,25 +140,55 @@ export function IndustryApplications() {
   ];
 
   const handleViewProfile = (application: Application) => {
-    toast.success("Viewing profile: " + application.candidateName);
+    // Here you can show a modal with full application details
+    toast.success(`Viewing ${application.name}'s application`);
+    console.log("Application details:", application);
   };
 
-  const handleUpdateStatus = (id: string, newStatus: Application["status"]) => {
-    setApplications(
-      applications.map((app) =>
-        app.id === id ? { ...app, status: newStatus } : app
-      )
-    );
-    toast.success(`Application ${newStatus}`);
+  const handleUpdateStatus = async (id: string, newStatus: Application["status"]) => {
+    try {
+      const response = await axios.patch(
+        `${import.meta.env.VITE_API_BASE_URL}/application-forms/${id}/status`,
+        { status: newStatus }
+      );
+      
+      setApplications(applications.map(app => 
+        app._id === id ? { ...app, status: newStatus } : app
+      ));
+      
+      toast.success(`Application status updated to ${newStatus}`);
+    } catch (error) {
+      console.error("Error updating status:", error);
+      toast.error("Failed to update status");
+    }
   };
 
   const handleScheduleInterview = (application: Application) => {
-    toast.success("Schedule interview with: " + application.candidateName);
+    toast.success(`Schedule interview with ${application.name}`);
+    // Here you would typically open a modal or navigate to a scheduling page
   };
 
   const handleExport = () => {
-    exportToExcel(applications, "applications");
+    const dataForExport = applications.map(app => ({
+      "Candidate Name": app.name,
+      "Job Title": app.jobTitle,
+      "Email": app.email,
+      "Applied Date": new Date(app.createdAt).toLocaleDateString(),
+      "Education Level": app.educationLevel,
+      "Status": app.status,
+      "Phone": app.phone,
+      "Address": app.address
+    }));
+    exportToExcel(dataForExport, `${organizationName}-applications`);
     toast.success("Applications exported successfully");
+  };
+
+  const statusCounts = {
+    Total: applications.length,
+    pending: applications.filter(app => app.status === "pending").length,
+    reviewed: applications.filter(app => app.status === "reviewed").length,
+    accepted: applications.filter(app => app.status === "accepted").length,
+    rejected: applications.filter(app => app.status === "rejected").length,
   };
 
   return (
@@ -145,27 +197,25 @@ export function IndustryApplications() {
         <div>
           <h2 className="text-xl font-semibold text-gray-900">Applications</h2>
           <p className="text-sm text-gray-500 mt-1">
-            Review and manage job applications
+            Review and manage job applications for {decodeURIComponent(organizationName || "")}
           </p>
         </div>
+        <button
+          onClick={handleExport}
+          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+        >
+          Export to Excel
+        </button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        {["Total", "Pending", "Shortlisted", "Hired"].map((status) => (
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
+        {Object.entries(statusCounts).map(([status, count]) => (
           <div
             key={status}
             className="bg-white p-4 rounded-lg shadow-sm border border-gray-200"
           >
             <h3 className="text-sm font-medium text-gray-500">{status}</h3>
-            <p className="text-2xl font-semibold mt-1">
-              {
-                applications.filter((app) =>
-                  status === "Total"
-                    ? true
-                    : app.status === status.toLowerCase()
-                ).length
-              }
-            </p>
+            <p className="text-2xl font-semibold mt-1">{count}</p>
           </div>
         ))}
       </div>

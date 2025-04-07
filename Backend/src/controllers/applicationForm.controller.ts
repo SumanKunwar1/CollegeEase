@@ -1,3 +1,4 @@
+// applicationForm.controller.ts
 import { Request, Response } from 'express';
 import { asyncHandler } from '../utils/asyncHandler';
 import { ApplicationForm } from '../models/applicationForm.model';
@@ -30,18 +31,53 @@ export const submitApplication = asyncHandler(async (req: Request, res: Response
   });
 });
 
-// @desc    Get all applications (for admin)
-// @route   GET /api/v1/application-forms
+// @desc    Get applications by company name
+// @route   GET /api/v1/application-forms/company/:companyName
 // @access  Private/Admin
-export const getApplications = asyncHandler(async (req: Request, res: Response) => {
-  const applications = await ApplicationForm.find().sort({ createdAt: -1 });
-  res.status(200).json({ success: true, data: applications });
+export const getApplicationsByCompany = asyncHandler(async (req: Request, res: Response) => {
+  const companyName = decodeURIComponent(req.params.companyName);
+  const applications = await ApplicationForm.find({ company: companyName })
+    .sort({ createdAt: -1 })
+    .select('name email phone educationLevel coverLetter address status createdAt jobId');
+  
+  // Get job titles for each application
+  const applicationsWithJobTitles = await Promise.all(
+    applications.map(async (app) => {
+      const job = await Job.findById(app.jobId).select('title');
+      return {
+        ...app.toObject(),
+        jobTitle: job?.title || 'Unknown Job'
+      };
+    })
+  );
+
+  res.status(200).json({ 
+    success: true, 
+    data: applicationsWithJobTitles 
+  });
 });
 
-// @desc    Get applications by job ID
-// @route   GET /api/v1/application-forms/job/:jobId
+// @desc    Update application status
+// @route   PATCH /api/v1/application-forms/:id/status
 // @access  Private/Admin
-export const getApplicationsByJob = asyncHandler(async (req: Request, res: Response) => {
-  const applications = await ApplicationForm.find({ jobId: req.params.jobId }).sort({ createdAt: -1 });
-  res.status(200).json({ success: true, data: applications });
+export const updateApplicationStatus = asyncHandler(async (req: Request, res: Response) => {
+  const { status } = req.body;
+  
+  const application = await ApplicationForm.findByIdAndUpdate(
+    req.params.id,
+    { status },
+    { new: true, runValidators: true }
+  );
+
+  if (!application) {
+    return res.status(404).json({
+      success: false,
+      message: 'Application not found'
+    });
+  }
+
+  res.status(200).json({
+    success: true,
+    data: application
+  });
 });
