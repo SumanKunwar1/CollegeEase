@@ -38,6 +38,7 @@ import skillDevelopmentRouter from './routes/skillDevelopment.routes';
 import expertInterviewRouter from './routes/expertInterview.routes';
 import jobMarketAnalysisRouter from './routes/jobMarketAnalysis.routes';
 import blogRoutes from './routes/blog.routes';
+import faqRoutes from './routes/faq.routes';
 
 
 dotenv.config();
@@ -108,6 +109,7 @@ app.use('/api/v1/skill-development', skillDevelopmentRouter);
 app.use('/api/v1/expert-interviews', expertInterviewRouter);
 app.use('/api/v1/job-market', jobMarketAnalysisRouter);
 app.use('/api/v1/blog', blogRoutes);
+app.use('/api/v1/faqs', faqRoutes);
 
 // Error handling
 app.use(errorHandler);

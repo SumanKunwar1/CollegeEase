@@ -1,76 +1,70 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ChevronDown, ChevronUp, Grip, Plus, Save, Trash } from "lucide-react";
 import { Button } from "../../../components/ui/button";
 import { Card, CardContent } from "../../../components/ui/card";
 import { Input } from "../../../components/ui/input";
 import { Textarea } from "../../../components/ui/textarea";
-import { useToast } from "../../../components/ui/use-toast";
+import { useEnhancedToast } from "../../../components/ui/enhanced-toast";
 
 interface FAQ {
-  id: number;
+  _id: string;
   question: string;
   answer: string;
   isOpen?: boolean;
 }
 
 export function AdminFAQPage() {
-  const { toast } = useToast();
-  const [faqs, setFaqs] = useState<FAQ[]>([
-    {
-      id: 1,
-      question: "What services does CollegeEase provide?",
-      answer:
-        "CollegeEase offers comprehensive college application support, including personalized guidance, application tracking, essay assistance, and expert advice. We also provide college matching services, deadline reminders, and strategic insights to help you get into your dream schools.",
-      isOpen: false,
-    },
-    {
-      id: 2,
-      question: "How early should I start the college application process?",
-      answer:
-        "We recommend starting the college application process during your junior year of high school. This gives you enough time to research colleges, prepare for standardized tests, work on your essays, and gather recommendations without feeling rushed.",
-      isOpen: false,
-    },
-    {
-      id: 3,
-      question: "How does the college matching service work?",
-      answer:
-        "Our college matching service uses a sophisticated algorithm that considers your academic profile, interests, career goals, and preferences to suggest colleges that best fit your needs. We analyze factors like location, size, programs offered, and admission requirements.",
-      isOpen: false,
-    },
-    {
-      id: 4,
-      question: "Can CollegeEase help with financial aid applications?",
-      answer:
-        "Yes! We provide guidance on completing the FAFSA, CSS Profile, and other financial aid forms. We also offer resources about scholarships, grants, and other funding opportunities to help make college more affordable.",
-      isOpen: false,
-    },
-    {
-      id: 5,
-      question:
-        "What makes CollegeEase different from other college counseling services?",
-      answer:
-        "CollegeEase combines personalized guidance with innovative technology to provide a comprehensive, stress-free college application experience. Our platform offers real-time tracking, automated reminders, and expert advice all in one place.",
-      isOpen: false,
-    },
-  ]);
+  const { toast } = useEnhancedToast();
+  const [faqs, setFaqs] = useState<FAQ[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
 
-  const toggleFAQ = (id: number) => {
+  useEffect(() => {
+    fetchFAQs();
+  }, []);
+
+  const fetchFAQs = async () => {
+    try {
+      setIsLoading(true);
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/faqs`, {
+        credentials: 'include',
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch FAQs');
+      }
+      
+      const data = await response.json();
+      setFaqs(data.data.map((faq: FAQ) => ({ ...faq, isOpen: false })));
+      setIsLoading(false);
+    } catch (error) {
+      console.error('Error fetching FAQs:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load FAQs",
+        variant: "destructive",
+      });
+      setIsLoading(false);
+    }
+  };
+
+  const toggleFAQ = (id: string) => {
     setFaqs(
-      faqs.map((faq) => (faq.id === id ? { ...faq, isOpen: !faq.isOpen } : faq))
+      faqs.map((faq) => (faq._id === id ? { ...faq, isOpen: !faq.isOpen } : faq))
     );
   };
 
-  const updateFAQ = (id: number, field: keyof FAQ, value: string) => {
+  const updateFAQ = (id: string, field: keyof FAQ, value: string) => {
     setFaqs(
-      faqs.map((faq) => (faq.id === id ? { ...faq, [field]: value } : faq))
+      faqs.map((faq) => (faq._id === id ? { ...faq, [field]: value } : faq))
     );
   };
 
   const addNewFAQ = () => {
     const newFAQ: FAQ = {
-      id: faqs.length > 0 ? Math.max(...faqs.map((faq) => faq.id)) + 1 : 1,
+      _id: `temp-${Date.now()}`,
       question: "New Question",
       answer: "Enter answer here...",
       isOpen: true,
@@ -78,17 +72,123 @@ export function AdminFAQPage() {
     setFaqs([...faqs, newFAQ]);
   };
 
-  const deleteFAQ = (id: number) => {
-    setFaqs(faqs.filter((faq) => faq.id !== id));
+  const deleteFAQ = async (id: string) => {
+    // Don't try to delete temporary FAQs (ones not yet saved to backend)
+    if (id.startsWith('temp-')) {
+      setFaqs(faqs.filter((faq) => faq._id !== id));
+      return;
+    }
+
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/faqs/${id}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete FAQ');
+      }
+
+      setFaqs(faqs.filter((faq) => faq._id !== id));
+      toast({
+        title: "Success",
+        description: "FAQ deleted successfully",
+      });
+    } catch (error) {
+      console.error('Error deleting FAQ:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete FAQ",
+        variant: "destructive",
+      });
+    }
   };
 
-  const saveChanges = () => {
-    // In a real application, this would send data to an API
-    toast({
-      title: "Changes saved",
-      description: "Your FAQs have been updated successfully.",
-    });
+  const saveChanges = async () => {
+    setIsSaving(true);
+    try {
+      // Process all FAQs - create new ones and update existing ones
+      const results = await Promise.allSettled(
+        faqs.map(async (faq) => {
+          if (faq._id.startsWith('temp-')) {
+            // Create new FAQ
+            const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/faqs`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                question: faq.question,
+                answer: faq.answer,
+              }),
+              credentials: 'include',
+            });
+
+            if (!response.ok) {
+              throw new Error('Failed to create FAQ');
+            }
+
+            return await response.json();
+          } else {
+            // Update existing FAQ
+            const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/faqs/${faq._id}`, {
+              method: 'PUT',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                question: faq.question,
+                answer: faq.answer,
+              }),
+              credentials: 'include',
+            });
+
+            if (!response.ok) {
+              throw new Error('Failed to update FAQ');
+            }
+
+            return await response.json();
+          }
+        })
+      );
+
+      // Check for any errors
+      const errors = results.filter(result => result.status === 'rejected');
+      if (errors.length > 0) {
+        throw new Error('Some operations failed');
+      }
+
+      // Refresh the FAQs list
+      await fetchFAQs();
+      
+      toast({
+        title: "Success",
+        description: "All changes saved successfully",
+      });
+    } catch (error) {
+      console.error('Error saving FAQs:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save some changes",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-6">
+        <div className="max-w-4xl mx-auto">
+          <h1 className="text-3xl font-bold text-gray-900 mb-8">Admin: Manage FAQs</h1>
+          <div className="flex justify-center items-center h-64">
+            <p>Loading FAQs...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
@@ -109,62 +209,70 @@ export function AdminFAQPage() {
         </div>
 
         <div className="space-y-4 mb-8">
-          {faqs.map((faq) => (
-            <Card key={faq.id} className="overflow-hidden">
-              <CardContent className="p-4">
-                <div className="flex items-start gap-2">
-                  <div className="mt-2">
-                    <Grip className="h-5 w-5 text-gray-400" />
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex justify-between items-start">
-                      <Input
-                        value={faq.question}
-                        onChange={(e) =>
-                          updateFAQ(faq.id, "question", e.target.value)
-                        }
-                        className="text-lg font-semibold mb-2"
-                        placeholder="Question"
-                      />
-                      <div className="flex items-center gap-2 ml-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => toggleFAQ(faq.id)}
-                        >
-                          {faq.isOpen ? <ChevronUp /> : <ChevronDown />}
-                        </Button>
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={() => deleteFAQ(faq.id)}
-                        >
-                          <Trash className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                    {faq.isOpen && (
-                      <Textarea
-                        value={faq.answer}
-                        onChange={(e) =>
-                          updateFAQ(faq.id, "answer", e.target.value)
-                        }
-                        className="mt-2"
-                        placeholder="Answer"
-                        rows={4}
-                      />
-                    )}
-                  </div>
-                </div>
+          {faqs.length === 0 ? (
+            <Card>
+              <CardContent className="p-4 text-center">
+                <p>No FAQs found. Add your first FAQ!</p>
               </CardContent>
             </Card>
-          ))}
+          ) : (
+            faqs.map((faq) => (
+              <Card key={faq._id} className="overflow-hidden">
+                <CardContent className="p-4">
+                  <div className="flex items-start gap-2">
+                    <div className="mt-2">
+                      <Grip className="h-5 w-5 text-gray-400" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex justify-between items-start">
+                        <Input
+                          value={faq.question}
+                          onChange={(e) =>
+                            updateFAQ(faq._id, "question", e.target.value)
+                          }
+                          className="text-lg font-semibold mb-2"
+                          placeholder="Question"
+                        />
+                        <div className="flex items-center gap-2 ml-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => toggleFAQ(faq._id)}
+                          >
+                            {faq.isOpen ? <ChevronUp /> : <ChevronDown />}
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => deleteFAQ(faq._id)}
+                          >
+                            <Trash className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                      {faq.isOpen && (
+                        <Textarea
+                          value={faq.answer}
+                          onChange={(e) =>
+                            updateFAQ(faq._id, "answer", e.target.value)
+                          }
+                          className="mt-2"
+                          placeholder="Answer"
+                          rows={4}
+                        />
+                      )}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))
+          )}
         </div>
 
         <div className="sticky bottom-6 bg-white p-4 rounded-lg shadow-lg border flex justify-end">
-          <Button onClick={saveChanges} className="w-full md:w-auto">
+          <Button onClick={saveChanges} className="w-full md:w-auto" disabled={isSaving}>
             <Save className="mr-2 h-4 w-4" />
-            Save Changes
+            {isSaving ? "Saving..." : "Save Changes"}
           </Button>
         </div>
       </div>
