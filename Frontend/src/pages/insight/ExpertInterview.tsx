@@ -7,99 +7,55 @@ import {
   BookOpen,
   TrendingUp,
 } from "lucide-react";
+import { useEffect, useState } from "react";
+import axios from "axios";
+import { useNavigate } from "react-router-dom";
+
+interface IInterview {
+  _id: string;
+  name: string;
+  role: string;
+  topic: string;
+  insights: string[];
+  imageUrl: string;
+  date: string;
+}
+
+interface IInterviewCategory {
+  _id: string;
+  category: string;
+  interviews: IInterview[];
+}
 
 const ExpertInterviewsPage = () => {
-  const interviews = [
-    {
-      category: "Tech Leaders",
-      interviews: [
-        {
-          name: "Sarah Chen",
-          role: "VP of Engineering at Google",
-          topic: "Breaking into Tech Leadership",
-          insights: [
-            "Building technical teams",
-            "Career progression in tech",
-            "Future of AI",
-          ],
-          imageUrl:
-            "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=400",
-          date: "March 15, 2024",
-        },
-        {
-          name: "Michael Rodriguez",
-          role: "CTO at Microsoft",
-          topic: "Innovation in Technology",
-          insights: [
-            "Cloud computing trends",
-            "Emerging technologies",
-            "Skills for future",
-          ],
-          imageUrl:
-            "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=400",
-          date: "March 20, 2024",
-        },
-      ],
-    },
-    {
-      category: "Academic Leaders",
-      interviews: [
-        {
-          name: "Dr. Emily Watson",
-          role: "Dean of Computer Science, Stanford",
-          topic: "Future of Education",
-          insights: [
-            "Online learning trends",
-            "Industry partnerships",
-            "Research opportunities",
-          ],
-          imageUrl:
-            "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=400",
-          date: "March 25, 2024",
-        },
-        {
-          name: "Prof. James Wilson",
-          role: "Harvard Business School",
-          topic: "Business Education Evolution",
-          insights: ["MBA trends", "Entrepreneurship", "Leadership skills"],
-          imageUrl:
-            "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=400",
-          date: "March 30, 2024",
-        },
-      ],
-    },
-    {
-      category: "Industry Innovators",
-      interviews: [
-        {
-          name: "Lisa Zhang",
-          role: "Founder & CEO, TechStart",
-          topic: "Startup Success Stories",
-          insights: [
-            "Entrepreneurship journey",
-            "Building products",
-            "Raising capital",
-          ],
-          imageUrl:
-            "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=400",
-          date: "April 5, 2024",
-        },
-        {
-          name: "David Park",
-          role: "Head of Innovation, Tesla",
-          topic: "Future of Mobility",
-          insights: [
-            "Electric vehicles",
-            "Sustainable tech",
-            "Innovation culture",
-          ],
-          imageUrl:
-            "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=400",
-          date: "April 10, 2024",
-        },
-      ],
-    },
-  ];
+  const [categories, setCategories] = useState<IInterviewCategory[]>([]);
+  const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const fetchInterviews = async () => {
+      try {
+        const response = await axios.get(
+          `${import.meta.env.VITE_API_BASE_URL}/expert-interviews`
+        );
+        setCategories(response.data.data);
+        setLoading(false);
+      } catch (error) {
+        console.error("Error fetching interviews:", error);
+        setLoading(false);
+      }
+    };
+
+    fetchInterviews();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 pt-20 flex justify-center items-center">
+        <div>Loading interviews...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 pt-20">
@@ -141,9 +97,9 @@ const ExpertInterviewsPage = () => {
 
         {/* Interviews by Category */}
         <div className="space-y-12">
-          {interviews.map((category, index) => (
+          {categories.map((category) => (
             <div
-              key={index}
+              key={category._id}
               className="bg-white rounded-xl shadow-md overflow-hidden"
             >
               <div className="p-8">
@@ -151,8 +107,8 @@ const ExpertInterviewsPage = () => {
                   {category.category}
                 </h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  {category.interviews.map((interview, iIndex) => (
-                    <div key={iIndex} className="flex space-x-6">
+                  {category.interviews.map((interview) => (
+                    <div key={interview._id} className="flex space-x-6">
                       <img
                         src={interview.imageUrl}
                         alt={interview.name}
@@ -176,19 +132,19 @@ const ExpertInterviewsPage = () => {
                           {interview.topic}
                         </p>
                         <ul className="text-sm text-gray-600 mb-3">
-                          {interview.insights.map((insight, index) => (
+                          {interview.insights.slice(0, 3).map((insight, index) => (
                             <li key={index} className="flex items-center">
                               <div className="h-1.5 w-1.5 bg-blue-500 rounded-full mr-2"></div>
                               {insight}
                             </li>
                           ))}
                         </ul>
-                        <a
-                          href={`/insights/expert-interviews/${interview.topic}`}
+                        <button
+                          onClick={() => navigate(`/insights/expert-interviews/${interview._id}`)}
                           className="inline-flex items-center text-blue-600 hover:text-blue-700"
                         >
                           Read interview <ArrowRight className="ml-2 h-4 w-4" />
-                        </a>
+                        </button>
                       </div>
                     </div>
                   ))}

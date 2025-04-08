@@ -30,9 +30,10 @@ export interface IInterview extends Document {
   fullInterview?: IFullInterview;
 }
 
+
 export interface IInterviewCategory extends Document {
   category: string;
-  interviews: Types.DocumentArray<IInterview>;
+  interviews: Types.DocumentArray<IInterview & { _id: Types.ObjectId }>;
 }
 
 const InterviewSectionSchema = new Schema<IInterviewSection>({

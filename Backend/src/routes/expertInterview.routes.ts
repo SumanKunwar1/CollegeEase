@@ -8,7 +8,8 @@ import {
   addInterviewToCategory,
   updateInterviewInCategory,
   deleteInterviewFromCategory,
-  updateFullInterviewDetails
+  updateFullInterviewDetails,
+  getInterviewById
 } from '../controllers/expertInterview.controller';
 
 const router = express.Router();
@@ -26,5 +27,6 @@ router.delete('/:categoryId/interviews/:interviewId', deleteInterviewFromCategor
 
 // Full interview details
 router.put('/:categoryId/interviews/:interviewId/full', updateFullInterviewDetails);
+router.get('/interview/:id', getInterviewById);
 
 export default router;

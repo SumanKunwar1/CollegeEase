@@ -202,3 +202,37 @@ export const updateFullInterviewDetails = asyncHandler(
     });
   }
 );
+
+export const getInterviewById = asyncHandler(
+  async (req: Request, res: Response) => {
+    const { id } = req.params;
+
+    // Find the category that contains this interview
+    const category = await InterviewCategory.findOne({ 'interviews._id': id });
+    
+    if (!category) {
+      return res.status(404).json({
+        success: false,
+        message: 'Interview not found'
+      });
+    }
+
+    // Find the specific interview
+    const interview = category.interviews.find(int => int._id.toString() === id);
+    
+    if (!interview) {
+      return res.status(404).json({
+        success: false,
+        message: 'Interview not found'
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: {
+        ...interview.toObject(),
+        category: category.category
+      }
+    });
+  }
+);

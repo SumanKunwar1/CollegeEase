@@ -274,9 +274,9 @@ function AppContent() {
             element={<ExpertInterviewsPage />}
           />
           <Route
-            path="/insights/expert-interviews/:topic"
+            path="/insights/expert-interviews/:id"
             element={<InterviewDetailPage />}
-          />
+/>
           <Route
             path="/insights/industry-trends"
             element={<IndustryTrendsPage />}
