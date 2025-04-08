@@ -138,7 +138,7 @@ import { AdminJobMarketAnalysisPage } from "./pages/admin/insights/AdminJobMarke
 import { AdminSkillDevelopmentPage } from "./pages/admin/insights/AdminSkillDevelopmentPage";
 //admin footer
 
-import { AdminBlogPage } from "./pages/admin/footer/AdminBlog";
+import  AdminBlog from "./pages/admin/footer/AdminBlog";
 import { AdminBlogDetailPage } from "./pages/admin/footer/AdminBlogDetails";
 import { AdminFAQPage } from "./pages/admin/footer/AdminFaqs";
 import { AdminCookiesPage } from "./pages/admin/footer/AdminCookies";
@@ -749,7 +749,7 @@ function AppContent() {
               <PrivateRoute
                 element={
                   <AdminLayout>
-                    <AdminBlogPage />
+                    <AdminBlog />
                   </AdminLayout>
                 }
               />

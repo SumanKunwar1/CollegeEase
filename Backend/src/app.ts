@@ -37,6 +37,7 @@ import industryTrendRouter from './routes/industryTrend.routes';
 import skillDevelopmentRouter from './routes/skillDevelopment.routes';
 import expertInterviewRouter from './routes/expertInterview.routes';
 import jobMarketAnalysisRouter from './routes/jobMarketAnalysis.routes';
+import blogRoutes from './routes/blog.routes';
 
 
 dotenv.config();
@@ -106,6 +107,7 @@ app.use('/api/v1/industry-trends', industryTrendRouter);
 app.use('/api/v1/skill-development', skillDevelopmentRouter);
 app.use('/api/v1/expert-interviews', expertInterviewRouter);
 app.use('/api/v1/job-market', jobMarketAnalysisRouter);
+app.use('/api/v1/blog', blogRoutes);
 
 // Error handling
 app.use(errorHandler);
