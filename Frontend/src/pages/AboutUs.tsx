@@ -132,7 +132,7 @@ const AboutCollegeEase: React.FC = () => {
             <h2 className="text-3xl font-semibold text-gray-800 mb-4">
               {aboutData.welcomeTitle}
             </h2>
-            <p className="text-lg text-gray-600">
+            <p className="text-lg text-gray-600 text-justify">
               {aboutData.welcomeDescription}
             </p>
           </motion.div>

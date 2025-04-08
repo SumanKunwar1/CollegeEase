@@ -26,14 +26,14 @@ const FeaturedColleges = () => {
                 <img
                   className="h-48 w-full object-cover"
                   src={college.imageUrl}
-                  alt={college.name}
+                  alt={college.organizationName}
                 />
               </div>
               <div className="flex-1 p-6 flex flex-col justify-between">
                 <div className="flex-1">
                   <div className="flex justify-between items-center">
                     <h3 className="text-xl font-semibold text-gray-900">
-                      {college.name}
+                      {college.organizationName}
                     </h3>
                     <div className="flex items-center">
                       <Star className="h-5 w-5 text-yellow-400 fill-current" />

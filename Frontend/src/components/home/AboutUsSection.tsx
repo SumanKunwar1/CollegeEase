@@ -41,24 +41,18 @@ const AboutUsPreview: React.FC = () => {
             <h3 className="text-2xl font-semibold text-gray-800 mb-4">
               Welcome to CollegeEase
             </h3>
-            <p className="text-lg text-gray-600 mb-2">
-              CollegeEase is your ultimate companion in navigating the world of
-              higher education. We aim to simplify the often overwhelming
-              process of selecting the right college, applying for admission,
-              and finding scholarships, all in one place. Our platform provides
-              easy-to-follow guidance, expert insights, and up-to-date resources
-              that empower students to make well-informed decisions about their
-              academic futures. Whether you're a high school senior or someone
-              looking to further your education, CollegeEase is here to ensure
-              you have everything you need to take the next step with
-              confidence.
-            </p>
+            <p className="text-lg text-gray-600 mb-2 text-justify">
+            CollegeEase is your trusted companion in navigating the world of higher education. We simplify the often overwhelming process of choosing the right college, applying for admission, and finding scholarships—all in one place. Our platform offers clear guidance, expert insights, and updated resources to help students make informed decisions about their academic future. Whether you're a high school senior or planning to continue your education, CollegeEase ensures you have the support you need to move forward with confidence. We also connect students with real success stories, financial aid, and personalized support to turn dreams into achievable goals...
+
+
+
             <a
               href="/about-us"
-              className="text-blue-600 hover:text-blue-800 font-semibold underline"
+              className="text-blue-600 hover:text-blue-800 italic underline"
             >
               Learn More
             </a>
+            </p>
           </motion.div>
         </div>
       </div>

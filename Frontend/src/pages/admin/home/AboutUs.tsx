@@ -177,7 +177,7 @@ const AdminAboutCollegeEase: React.FC = () => {
         </motion.div>
 
         {/* Welcome Section */}
-        <div className="grid md:grid-cols-2 gap-16 mb-16">
+        <div className="grid md:grid-cols-2 gap-16 mb-16 text-justify">
           <motion.div
             initial={{ opacity: 0, x: -50 }}
             animate={{ opacity: 1, x: 0 }}
@@ -218,7 +218,7 @@ const AdminAboutCollegeEase: React.FC = () => {
           >
             <Card className="p-6 shadow-md h-full">
               <CardHeader>
-                <CardTitle className="text-2xl font-semibold text-gray-700">Welcome Content</CardTitle>
+                <CardTitle className="text-2xl font-semibold text-gray-700 text-justify">Welcome Content</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
@@ -229,7 +229,7 @@ const AdminAboutCollegeEase: React.FC = () => {
                     onChange={(e) => handleTextChange("welcomeTitle", e.target.value)}
                   />
                 </div>
-                <div className="space-y-2">
+                <div className="space-y-2 text-justify">
                   <Label htmlFor="welcomeDescription">Welcome Description</Label>
                   <Textarea
                     id="welcomeDescription"

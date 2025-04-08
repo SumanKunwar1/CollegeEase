@@ -65,7 +65,7 @@ const Hero = () => {
 
     // Filter colleges
     const filteredColleges = colleges.filter((college) =>
-      college.name.toLowerCase().includes(query.toLowerCase())
+      college.organizationName.toLowerCase().includes(query.toLowerCase())
     );
 
     // Filter scholarships
@@ -200,7 +200,7 @@ const Hero = () => {
                               to={`/colleges/${college.id}`} // Redirect to college details page
                               className="block w-full h-full"
                             >
-                              {college.name} - {college.location}
+                              {college.organizationName} - {college.location}
                             </Link>
                           </li>
                         ))}
@@ -223,7 +223,7 @@ const Hero = () => {
                               to={`/colleges/${scholarship.id}`} // Redirect to college details page
                               className="block w-full h-full"
                             ></Link>
-                            {scholarship.name} - {scholarship.provider}
+                            {scholarship.name} - {scholarship.organizationName}
                           </li>
                         ))}
                       </ul>
