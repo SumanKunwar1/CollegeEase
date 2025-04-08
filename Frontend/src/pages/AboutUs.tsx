@@ -1,12 +1,100 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import FeatureCard from "../components/FeatureCard";
-import { features, benefits } from "../../src/data/aboutUs";
+import { 
+  FaSearch, 
+  FaTrophy, 
+  FaVrCardboard, 
+  FaGraduationCap, 
+  FaRobot, 
+  FaUserFriends, 
+  FaBriefcase, 
+  FaComments 
+} from "react-icons/fa";
+
+interface AboutUsData {
+  title: string;
+  tagline: string;
+  welcomeTitle: string;
+  welcomeDescription: string;
+  featuresTitle: string;
+  features: Array<{
+    icon: string;
+    title: string;
+    description: string;
+  }>;
+  benefitsTitle: string;
+  benefits: string[];
+  ctaTitle: string;
+  ctaDescription: string;
+  ctaButtonText: string;
+  imageUrl: string;
+}
 
 const AboutCollegeEase: React.FC = () => {
+  const [aboutData, setAboutData] = useState<AboutUsData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Icon mapping
+  const iconComponents: { [key: string]: React.ComponentType<any> } = {
+    FaSearch,
+    FaTrophy,
+    FaVrCardboard,
+    FaGraduationCap,
+    FaRobot,
+    FaUserFriends,
+    FaBriefcase,
+    FaComments
+  };
+
+  useEffect(() => {
+    const fetchAboutUsData = async () => {
+      try {
+        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/aboutus`);
+        if (!response.ok) {
+          throw new Error('Failed to fetch about us data');
+        }
+        const data = await response.json();
+        setAboutData(data.data);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'An unknown error occurred');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchAboutUsData();
+  }, []);
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen bg-gradient-to-b from-blue-50 to-white">
+        <div className="text-xl text-gray-600">Loading...</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex justify-center items-center min-h-screen bg-gradient-to-b from-blue-50 to-white">
+        <div className="text-xl text-red-500">Error: {error}</div>
+      </div>
+    );
+  }
+
+  if (!aboutData) {
+    return (
+      <div className="flex justify-center items-center min-h-screen bg-gradient-to-b from-blue-50 to-white">
+        <div className="text-xl text-gray-600">No data available</div>
+      </div>
+    );
+  }
+
   return (
     <div className="bg-gradient-to-b from-blue-50 to-white min-h-screen">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+        {/* Title Section */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -14,10 +102,10 @@ const AboutCollegeEase: React.FC = () => {
           className="text-center mb-16"
         >
           <h1 className="text-5xl font-bold text-gray-900 mb-4">
-            About CollegeEase
+            {aboutData.title}
           </h1>
           <p className="text-xl text-gray-600">
-            Empowering Your Educational Journey
+            {aboutData.tagline}
           </p>
         </motion.div>
 
@@ -29,7 +117,7 @@ const AboutCollegeEase: React.FC = () => {
             transition={{ duration: 0.8, delay: 0.2 }}
           >
             <img
-              src="/Public/Assets/images/Harvard University.jpg"
+              src={aboutData.imageUrl || "/Public/Assets/images/Harvard University.jpg"}
               alt="CollegeEase Campus"
               className="rounded-lg shadow-lg w-full h-auto"
             />
@@ -42,19 +130,10 @@ const AboutCollegeEase: React.FC = () => {
             className="flex flex-col justify-center"
           >
             <h2 className="text-3xl font-semibold text-gray-800 mb-4">
-              Welcome to CollegeEase
+              {aboutData.welcomeTitle}
             </h2>
             <p className="text-lg text-gray-600">
-              CollegeEase is your ultimate companion in navigating the world of
-              higher education. We aim to simplify the often overwhelming
-              process of selecting the right college, applying for admission,
-              and finding scholarships, all in one place. Our platform provides
-              easy-to-follow guidance, expert insights, and up-to-date resources
-              that empower students to make well-informed decisions about their
-              academic futures. Whether you're a high school senior or someone
-              looking to further your education, CollegeEase is here to ensure
-              you have everything you need to take the next step with
-              confidence.
+              {aboutData.welcomeDescription}
             </p>
           </motion.div>
         </div>
@@ -66,17 +145,20 @@ const AboutCollegeEase: React.FC = () => {
           transition={{ duration: 0.8, delay: 0.6 }}
         >
           <h2 className="text-3xl font-semibold text-gray-800 mb-8 text-center">
-            What We Offer
+            {aboutData.featuresTitle}
           </h2>
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {features.map((feature, index) => (
-              <FeatureCard
-                key={index}
-                icon={feature.icon}
-                title={feature.title}
-                description={feature.description}
-              />
-            ))}
+            {aboutData.features.map((feature, index) => {
+              const IconComponent = iconComponents[feature.icon];
+              return (
+                <FeatureCard
+                  key={index}
+                  icon={IconComponent ? <IconComponent /> : null}
+                  title={feature.title}
+                  description={feature.description}
+                />
+              );
+            })}
           </div>
         </motion.div>
 
@@ -88,10 +170,10 @@ const AboutCollegeEase: React.FC = () => {
           className="mt-16 text-center"
         >
           <h2 className="text-3xl font-semibold text-gray-800 mb-8">
-            Why Choose CollegeEase?
+            {aboutData.benefitsTitle}
           </h2>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {benefits.map((benefit, index) => (
+            {aboutData.benefits.map((benefit, index) => (
               <motion.div
                 key={index}
                 className="bg-white p-6 rounded-xl shadow-md"
@@ -112,13 +194,10 @@ const AboutCollegeEase: React.FC = () => {
           className="mt-16 text-center"
         >
           <h2 className="text-3xl font-semibold text-gray-800 mb-4">
-            Join Us in Simplifying Education
+            {aboutData.ctaTitle}
           </h2>
           <p className="text-lg text-gray-600 mb-8 max-w-3xl mx-auto">
-            Whether you're a high school student exploring options, a parent
-            supporting your child's dreams, or a professional looking for
-            further education, CollegeEase is your trusted partner in unlocking
-            your educational future.
+            {aboutData.ctaDescription}
           </p>
           <motion.a
             href="/colleges"
@@ -126,7 +205,7 @@ const AboutCollegeEase: React.FC = () => {
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
           >
-            Start your journey today
+            {aboutData.ctaButtonText}
           </motion.a>
         </motion.div>
       </div>
