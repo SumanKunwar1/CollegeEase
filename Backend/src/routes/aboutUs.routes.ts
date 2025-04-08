@@ -1,33 +1,12 @@
-import { Router } from 'express';
-import {
-  getAboutUs,
-  createAboutUs,
-  updateAboutUs,
-  deleteAboutUs
-} from '../controllers/aboutUs.controller';
+// src/routes/aboutUs.routes.ts
+import express from 'express';
+import { getAboutUs, updateAboutUs } from '../controllers/aboutUs.controller';
+import { asyncHandler } from '../utils/asyncHandler';
 
-// Create a strongly-typed router
-const router: Router = Router();
+const router = express.Router();
 
-// Define routes with proper typing
-router.get('/', (req, res, next) => {
-  Promise.resolve(getAboutUs(req, res))
-    .catch(next);
-});
-
-router.post('/', (req, res, next) => {
-  Promise.resolve(createAboutUs(req, res))
-    .catch(next);
-});
-
-router.put('/', (req, res, next) => {
-  Promise.resolve(updateAboutUs(req, res))
-    .catch(next);
-});
-
-router.delete('/', (req, res, next) => {
-  Promise.resolve(deleteAboutUs(req, res))
-    .catch(next);
-});
+router.route('/')
+  .get(asyncHandler(getAboutUs))
+  .put(asyncHandler(updateAboutUs));
 
 export default router;

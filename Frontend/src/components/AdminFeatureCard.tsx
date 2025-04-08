@@ -1,26 +1,40 @@
-// src/components/AboutCollegeEase/FeatureCard.tsx
+// src/components/AdminFeatureCard.tsx
 import { motion } from "framer-motion";
-import { FeatureCardProps } from "../types/aboutus";
+import { ReactNode } from "react";
 
-const AdminFeatureCard = ({ icon, title, description }: FeatureCardProps) => (
+interface FeatureCardProps {
+  icon: ReactNode;
+  title: string;
+  description: string;
+  onTitleChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onDescriptionChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
+}
+
+const AdminFeatureCard = ({ 
+  icon, 
+  title, 
+  description,
+  onTitleChange,
+  onDescriptionChange
+}: FeatureCardProps) => (
   <motion.div
-    contentEditable
-    suppressContentEditableWarning
     className="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300"
     whileHover={{ scale: 1.05 }}
     whileTap={{ scale: 0.95 }}
   >
     <div className="text-4xl text-blue-600 mb-4">{icon}</div>
-    <h3
-      className="text-xl font-semibold text-gray-800 mb-2"
-      contentEditable
-      suppressContentEditableWarning
-    >
-      {title}
-    </h3>
-    <p className="text-gray-600" contentEditable suppressContentEditableWarning>
-      {description}
-    </p>
+    <div className="space-y-2">
+      <input
+        value={title}
+        onChange={onTitleChange}
+        className="text-xl font-semibold text-gray-800 w-full bg-transparent border-b border-gray-200 focus:border-blue-500 focus:outline-none"
+      />
+      <input
+        value={description}
+        onChange={onDescriptionChange}
+        className="text-gray-600 w-full bg-transparent border-b border-gray-200 focus:border-blue-500 focus:outline-none"
+      />
+    </div>
   </motion.div>
 );
 

@@ -1,88 +1,104 @@
-import { Request, Response } from 'express';
+// src/controllers/aboutUs.controller.ts
+import { Request, Response, NextFunction } from 'express';
 import AboutUs from '../models/aboutUs.model';
+import { asyncHandler } from '../utils/asyncHandler';
+import ErrorResponse from '../utils/errorResponse';
 
-export const getAboutUs = async (req: Request, res: Response): Promise<Response> => {
-  try {
-    const aboutUsData = await AboutUs.findOne();
-    if (!aboutUsData) {
-      return res.status(200).json({
-        title: "About CollegeEase",
-        tagline: "Empowering Your Educational Journey",
-        // ... other default fields
-      });
-    }
-    return res.status(200).json(aboutUsData);
-  } catch (error: unknown) {
-    if (error instanceof Error) {
-      return res.status(500).json({ 
-        message: 'Error fetching data', 
-        error: error.message 
-      });
-    }
-    return res.status(500).json({ 
-      message: 'Unknown error occurred' 
-    });
+// Initialize default data (same as your frontend data)
+const initializeDefaultData = async () => {
+  const count = await AboutUs.countDocuments();
+  if (count === 0) {
+    const defaultData = {
+      title: "About CollegeEase",
+      tagline: "Empowering Your Educational Journey",
+      welcomeTitle: "Welcome to CollegeEase",
+      welcomeDescription: "CollegeEase is your ultimate companion in navigating the world of higher education...",
+      featuresTitle: "What We Offer",
+      features: [
+        { icon: "FaSearch", title: "Search & Compare Colleges", description: "Easily filter and compare institutions..." },
+        { icon: "FaTrophy", title: "College Rankings", description: "Access up-to-date rankings based on..." },
+        { icon: "FaVrCardboard", title: "Virtual Campus Tours", description: "Experience campuses from anywhere..." },
+        { icon: "FaGraduationCap", title: "Scholarship Finder", description: "Discover funding opportunities..." },
+        { icon: "FaRobot", title: "Smart Admission Predictor", description: "Estimate your admission chances..." },
+        { icon: "FaUserFriends", title: "Application Guidance & Mentorship", description: "Get expert guidance..." },
+        { icon: "FaBriefcase", title: "Career & Internship Opportunities", description: "Prepare for your future..." },
+        { icon: "FaComments", title: "Community & Student Forums", description: "Engage with fellow students..." }
+      ],
+      benefitsTitle: "Why Choose CollegeEase?",
+      benefits: [
+        "Comprehensive Database – Access thousands of colleges...",
+        "User-Friendly Platform – Navigate easily with...",
+        "Data-Driven Insights – Make well-informed decisions...",
+        "Personalized Support – Get guidance tailored...",
+        "Completely Free to Use – Quality education accessible...",
+        "Career Advancement – Explore internships..."
+      ],
+      ctaTitle: "Join Us in Simplifying Education",
+      ctaDescription: "Whether you're a high school student exploring options...",
+      ctaButtonText: "Start your journey today",
+      imageUrl: "/Public/Assets/images/Harvard University.jpg"
+    };
+    await AboutUs.create(defaultData);
   }
 };
 
-export const createAboutUs = async (req: Request, res: Response): Promise<Response> => {
-  try {
-    await AboutUs.deleteMany({});
-    const newAboutUs = new AboutUs(req.body);
-    const savedData = await newAboutUs.save();
-    return res.status(201).json(savedData);
-  } catch (error: unknown) {
-    if (error instanceof Error) {
-      return res.status(400).json({ 
-        message: 'Error creating data', 
-        error: error.message 
-      });
-    }
-    return res.status(400).json({ 
-      message: 'Unknown error occurred' 
-    });
+// Get About Us data
+export const getAboutUs = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+  await initializeDefaultData();
+  const aboutUs = await AboutUs.findOne();
+  
+  if (!aboutUs) {
+    return next(new ErrorResponse('About Us data not found', 404));
   }
-};
 
-export const updateAboutUs = async (req: Request, res: Response): Promise<Response> => {
-  try {
-    let aboutUsData = await AboutUs.findOne();
-    
-    if (!aboutUsData) {
-      aboutUsData = new AboutUs(req.body);
-      const savedData = await aboutUsData.save();
-      return res.status(200).json(savedData);
-    }
+  res.status(200).json({
+    success: true,
+    data: aboutUs
+  });
+});
 
-    aboutUsData.set(req.body);
-    const updatedData = await aboutUsData.save();
-    return res.status(200).json(updatedData);
-  } catch (error: unknown) {
-    if (error instanceof Error) {
-      return res.status(400).json({ 
-        message: 'Error updating data', 
-        error: error.message 
-      });
-    }
-    return res.status(400).json({ 
-      message: 'Unknown error occurred' 
-    });
+// Update About Us data
+export const updateAboutUs = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+  const { 
+    title, 
+    tagline, 
+    welcomeTitle, 
+    welcomeDescription, 
+    featuresTitle, 
+    features, 
+    benefitsTitle, 
+    benefits, 
+    ctaTitle, 
+    ctaDescription, 
+    ctaButtonText, 
+    imageUrl 
+  } = req.body;
+
+  const aboutUs = await AboutUs.findOneAndUpdate(
+    {},
+    { 
+      title, 
+      tagline, 
+      welcomeTitle, 
+      welcomeDescription, 
+      featuresTitle, 
+      features, 
+      benefitsTitle, 
+      benefits, 
+      ctaTitle, 
+      ctaDescription, 
+      ctaButtonText, 
+      imageUrl 
+    },
+    { new: true, runValidators: true }
+  );
+
+  if (!aboutUs) {
+    return next(new ErrorResponse('About Us data not found', 404));
   }
-};
 
-export const deleteAboutUs = async (req: Request, res: Response): Promise<Response> => {
-  try {
-    await AboutUs.deleteMany({});
-    return res.status(200).json({ message: 'Data deleted successfully' });
-  } catch (error: unknown) {
-    if (error instanceof Error) {
-      return res.status(500).json({ 
-        message: 'Error deleting data', 
-        error: error.message 
-      });
-    }
-    return res.status(500).json({ 
-      message: 'Unknown error occurred' 
-    });
-  }
-};
+  res.status(200).json({
+    success: true,
+    data: aboutUs
+  });
+});
