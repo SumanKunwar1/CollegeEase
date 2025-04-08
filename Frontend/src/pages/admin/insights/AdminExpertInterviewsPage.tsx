@@ -1,119 +1,58 @@
 "use client"
 
 import type React from "react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Calendar, Plus, Trash, Edit, Search, X } from "lucide-react"
+import axios from "axios"
+import { useEnhancedToast } from "../../../components/ui/enhanced-toast"
 
-interface Interview {
-  id: number
+interface IInterviewSection {
+  title: string
+  content: string
+}
+
+interface IInterviewResource {
+  title: string
+  url: string
+  type: string
+}
+
+interface IFullInterview {
+  introduction: string
+  videoUrl?: string
+  sections: IInterviewSection[]
+  keyTakeaways: string[]
+  resources: IInterviewResource[]
+}
+
+interface IInterview {
+  _id: string
   name: string
   role: string
   topic: string
   insights: string[]
   imageUrl: string
   date: string
-  fullInterview?: {
-    introduction: string
-    videoUrl?: string
-    sections: {
-      title: string
-      content: string
-    }[]
-    keyTakeaways: string[]
-    resources: {
-      title: string
-      url: string
-      type: string
-    }[]
-  }
+  fullInterview?: IFullInterview
 }
 
-interface InterviewCategory {
-  id: number
+interface IInterviewCategory {
+  _id: string
   category: string
-  interviews: Interview[]
+  interviews: IInterview[]
 }
 
 export function AdminExpertInterviewsPage() {
-  const [categories, setCategories] = useState<InterviewCategory[]>([
-    {
-      id: 1,
-      category: "Tech Leaders",
-      interviews: [
-        {
-          id: 1,
-          name: "Sarah Chen",
-          role: "VP of Engineering at Google",
-          topic: "Breaking into Tech Leadership",
-          insights: ["Building technical teams", "Career progression in tech", "Future of AI"],
-          imageUrl: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=400",
-          date: "March 15, 2024",
-          fullInterview: {
-            introduction:
-              "Sarah Chen shares her journey from a software engineer to VP of Engineering at Google, offering invaluable insights into leadership in the tech industry.",
-            videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ",
-            sections: [
-              {
-                title: "Journey to Leadership",
-                content:
-                  "My journey into tech leadership began as a software engineer working on complex distributed systems.",
-              },
-              {
-                title: "Building Technical Teams",
-                content: "Building effective technical teams is both an art and a science.",
-              },
-            ],
-            keyTakeaways: [
-              "Technical leadership requires a different skillset than engineering",
-              "Diverse teams lead to better innovation and problem-solving",
-            ],
-            resources: [
-              {
-                title: "Leadership in Tech: A Comprehensive Guide",
-                url: "#",
-                type: "PDF",
-              },
-            ],
-          },
-        },
-        {
-          id: 2,
-          name: "Michael Rodriguez",
-          role: "CTO at Microsoft",
-          topic: "Innovation in Technology",
-          insights: ["Cloud computing trends", "Emerging technologies", "Skills for future"],
-          imageUrl: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=400",
-          date: "March 20, 2024",
-        },
-      ],
-    },
-    {
-      id: 2,
-      category: "Academic Leaders",
-      interviews: [
-        {
-          id: 3,
-          name: "Dr. Emily Watson",
-          role: "Dean of Computer Science, Stanford",
-          topic: "Future of Education",
-          insights: ["Online learning trends", "Industry partnerships", "Research opportunities"],
-          imageUrl: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=400",
-          date: "March 25, 2024",
-        },
-      ],
-    },
-  ])
-
+  const [categories, setCategories] = useState<IInterviewCategory[]>([])
   const [searchQuery, setSearchQuery] = useState("")
   const [showAddCategoryForm, setShowAddCategoryForm] = useState(false)
   const [showAddInterviewForm, setShowAddInterviewForm] = useState(false)
-  const [showFullInterviewForm, setShowFullInterviewForm] = useState(false)
-  const [editingCategory, setEditingCategory] = useState<InterviewCategory | null>(null)
-  const [editingInterview, setEditingInterview] = useState<Interview | null>(null)
-  const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null)
-  const [selectedInterviewId, setSelectedInterviewId] = useState<number | null>(null)
-  const [successMessage, setSuccessMessage] = useState("")
-  const [expandedInsights, setExpandedInsights] = useState<Record<number, boolean>>({})
+  const [editingCategory, setEditingCategory] = useState<IInterviewCategory | null>(null)
+  const [editingInterview, setEditingInterview] = useState<IInterview | null>(null)
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null)
+  const [expandedInsights, setExpandedInsights] = useState<Record<string, boolean>>({})
+  const [loading, setLoading] = useState(true)
+  const { toast } = useEnhancedToast()
 
   // Form states
   const [categoryFormData, setCategoryFormData] = useState<{
@@ -122,7 +61,7 @@ export function AdminExpertInterviewsPage() {
     category: "",
   })
 
-  const [interviewFormData, setInterviewFormData] = useState<Omit<Interview, "id" | "fullInterview">>({
+  const [interviewFormData, setInterviewFormData] = useState<Omit<IInterview, "_id" | "fullInterview">>({
     name: "",
     role: "",
     topic: "",
@@ -131,7 +70,7 @@ export function AdminExpertInterviewsPage() {
     date: "",
   })
 
-  const [fullInterviewFormData, setFullInterviewFormData] = useState<NonNullable<Interview["fullInterview"]>>({
+  const [fullInterviewFormData, setFullInterviewFormData] = useState<NonNullable<IInterview["fullInterview"]>>({
     introduction: "",
     videoUrl: "",
     sections: [
@@ -154,21 +93,42 @@ export function AdminExpertInterviewsPage() {
   const [currentInsight, setCurrentInsight] = useState("")
   const [currentKeyTakeaway, setCurrentKeyTakeaway] = useState("")
 
+  // Fetch all interview categories
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/expert-interviews`)
+        setCategories(response.data.data)
+        setLoading(false)
+      } catch (error) {
+        console.error("Error fetching interview categories:", error)
+        toast({
+          title: "Error",
+          description: "Failed to fetch interview categories",
+          variant: "destructive",
+        })
+        setLoading(false)
+      }
+    }
+
+    fetchCategories()
+  }, [])
+
   // Filter categories and interviews based on search query
   const filteredCategories = categories
     .map((category) => ({
       ...category,
       interviews: category.interviews.filter(
         (interview) =>
-          interview.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          interview.role.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          interview.topic.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          interview.insights.some((insight) => insight.toLowerCase().includes(searchQuery.toLowerCase())),
+          interview?.name?.toLowerCase().includes(searchQuery?.toLowerCase()) ||
+          interview?.role?.toLowerCase().includes(searchQuery?.toLowerCase()) ||
+          interview?.topic?.toLowerCase().includes(searchQuery?.toLowerCase()) ||
+          interview?.insights?.some((insight) => insight?.toLowerCase().includes(searchQuery?.toLowerCase())),
       ),
     }))
     .filter(
       (category) =>
-        category.interviews.length > 0 || category.category.toLowerCase().includes(searchQuery.toLowerCase()),
+        category.interviews.length > 0 || category?.category?.toLowerCase().includes(searchQuery?.toLowerCase()),
     )
 
   const handleCategoryInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -180,7 +140,6 @@ export function AdminExpertInterviewsPage() {
     setInterviewFormData((prev) => ({ ...prev, [name]: value }))
   }
 
-  // Replace the handleInsightsChange function with these two functions
   const handleAddInsight = () => {
     if (currentInsight.trim()) {
       setInterviewFormData((prev) => ({
@@ -198,7 +157,6 @@ export function AdminExpertInterviewsPage() {
     }))
   }
 
-  // Add these functions for key takeaways
   const handleAddKeyTakeaway = () => {
     if (currentKeyTakeaway.trim()) {
       setFullInterviewFormData((prev) => ({
@@ -221,14 +179,6 @@ export function AdminExpertInterviewsPage() {
     field: string,
   ) => {
     setFullInterviewFormData((prev) => ({ ...prev, [field]: e.target.value }))
-  }
-
-  const handleKeyTakeawaysChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const takeaways = e.target.value
-      .split(",")
-      .map((takeaway) => takeaway.trim())
-      .filter((takeaway) => takeaway !== "")
-    setFullInterviewFormData((prev) => ({ ...prev, keyTakeaways: takeaways }))
   }
 
   const handleSectionChange = (index: number, field: "title" | "content", value: string) => {
@@ -277,214 +227,305 @@ export function AdminExpertInterviewsPage() {
     })
   }
 
-  const handleAddCategory = () => {
-    const newId = categories.length > 0 ? Math.max(...categories.map((cat) => cat.id)) + 1 : 1
-    const newCategory = {
-      id: newId,
-      category: categoryFormData.category,
-      interviews: [],
+  const handleAddCategory = async () => {
+    try {
+      const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/expert-interviews`, {
+        category: categoryFormData.category,
+      })
+      
+      setCategories([...categories, response.data.data])
+      setShowAddCategoryForm(false)
+      setCategoryFormData({ category: "" })
+      
+      toast({
+        title: "Success",
+        description: "Interview category added successfully!",
+      })
+    } catch (error) {
+      console.error("Error adding category:", error)
+      toast({
+        title: "Error",
+        description: "Failed to add interview category",
+        variant: "destructive",
+      })
     }
-
-    setCategories([...categories, newCategory])
-    setShowAddCategoryForm(false)
-    setCategoryFormData({ category: "" })
-    setSuccessMessage("Interview category added successfully!")
-
-    setTimeout(() => {
-      setSuccessMessage("")
-    }, 3000)
   }
 
-  const handleUpdateCategory = () => {
+  const handleUpdateCategory = async () => {
     if (!editingCategory) return
 
-    setCategories(
-      categories.map((category) =>
-        category.id === editingCategory.id ? { ...category, category: categoryFormData.category } : category,
-      ),
-    )
+    try {
+      const response = await axios.put(
+        `${import.meta.env.VITE_API_BASE_URL}/expert-interviews/${editingCategory._id}`,
+        { category: categoryFormData.category }
+      )
 
-    setEditingCategory(null)
-    setCategoryFormData({ category: "" })
-    setSuccessMessage("Interview category updated successfully!")
+      setCategories(
+        categories.map((category) =>
+          category._id === editingCategory._id ? response.data.data : category
+        )
+      )
 
-    setTimeout(() => {
-      setSuccessMessage("")
-    }, 3000)
+      setEditingCategory(null)
+      setCategoryFormData({ category: "" })
+      
+      toast({
+        title: "Success",
+        description: "Interview category updated successfully!",
+      })
+    } catch (error) {
+      console.error("Error updating category:", error)
+      toast({
+        title: "Error",
+        description: "Failed to update interview category",
+        variant: "destructive",
+      })
+    }
   }
 
-  const handleDeleteCategory = (id: number) => {
-    setCategories(categories.filter((category) => category.id !== id))
-    setSuccessMessage("Interview category deleted successfully!")
-
-    setTimeout(() => {
-      setSuccessMessage("")
-    }, 3000)
+  const handleDeleteCategory = async (id: string) => {
+    try {
+      await axios.delete(`${import.meta.env.VITE_API_BASE_URL}/expert-interviews/${id}`)
+      setCategories(categories.filter((category) => category._id !== id))
+      
+      toast({
+        title: "Success",
+        description: "Interview category deleted successfully!",
+      })
+    } catch (error) {
+      console.error("Error deleting category:", error)
+      toast({
+        title: "Error",
+        description: "Failed to delete interview category",
+        variant: "destructive",
+      })
+    }
   }
 
-  const handleAddInterview = () => {
+  const handleAddInterview = async () => {
     if (!selectedCategoryId) return
 
-    const newId = Math.max(...categories.flatMap((cat) => cat.interviews.map((interview) => interview.id)), 0) + 1
-    const newInterview = { id: newId, ...interviewFormData }
+    try {
+      const interviewData = {
+        ...interviewFormData,
+        fullInterview: fullInterviewFormData,
+      }
 
-    setCategories(
-      categories.map((category) =>
-        category.id === selectedCategoryId
-          ? { ...category, interviews: [...category.interviews, newInterview] }
-          : category,
-      ),
-    )
+      const response = await axios.post(
+        `${import.meta.env.VITE_API_BASE_URL}/expert-interviews/${selectedCategoryId}/interviews`,
+        interviewData
+      )
 
-    setShowAddInterviewForm(false)
-    setSelectedCategoryId(null)
-    setInterviewFormData({
-      name: "",
-      role: "",
-      topic: "",
-      insights: [],
-      imageUrl: "",
-      date: "",
-    })
-    setSuccessMessage("Interview added successfully!")
+      setCategories(
+        categories.map((category) =>
+          category._id === selectedCategoryId
+            ? { ...category, interviews: [...category.interviews, response.data.data] }
+            : category
+        )
+      )
 
-    setTimeout(() => {
-      setSuccessMessage("")
-    }, 3000)
+      setShowAddInterviewForm(false)
+      setSelectedCategoryId(null)
+      setInterviewFormData({
+        name: "",
+        role: "",
+        topic: "",
+        insights: [],
+        imageUrl: "",
+        date: "",
+      })
+      setFullInterviewFormData({
+        introduction: "",
+        videoUrl: "",
+        sections: [
+          {
+            title: "",
+            content: "",
+          },
+        ],
+        keyTakeaways: [],
+        resources: [
+          {
+            title: "",
+            url: "",
+            type: "",
+          },
+        ],
+      })
+      
+      
+      toast({
+        title: "Success",
+        description: "Interview added successfully!",
+      })
+      window.location.reload();
+      
+    } catch (error) {
+      console.error("Error adding interview:", error)
+      toast({
+        title: "Error",
+        description: "Failed to add interview",
+        variant: "destructive",
+      })
+    }
   }
 
-  const handleUpdateInterview = () => {
-    if (!editingInterview) return
+  const handleUpdateInterview = async () => {
+    if (!editingInterview || !editingInterview._id) return
 
-    setCategories(
-      categories.map((category) => ({
-        ...category,
-        interviews: category.interviews.map((interview) =>
-          interview.id === editingInterview.id
-            ? {
-                ...interview,
-                ...interviewFormData,
-                fullInterview: interview.fullInterview,
-              }
-            : interview,
-        ),
-      })),
-    )
+    try {
+      const interviewData = {
+        ...interviewFormData,
+        fullInterview: fullInterviewFormData,
+      }
 
-    setEditingInterview(null)
-    setInterviewFormData({
-      name: "",
-      role: "",
-      topic: "",
-      insights: [],
-      imageUrl: "",
-      date: "",
-    })
-    setSuccessMessage("Interview updated successfully!")
+      const response = await axios.put(
+        `${import.meta.env.VITE_API_BASE_URL}/expert-interviews/${editingInterview._id}`,
+        interviewData
+      )
 
-    setTimeout(() => {
-      setSuccessMessage("")
-    }, 3000)
+      setCategories(
+        categories.map((category) => ({
+          ...category,
+          interviews: category.interviews.map((interview) =>
+            interview._id === editingInterview._id ? response.data.data : interview
+          ),
+        }))
+      )
+
+      setEditingInterview(null)
+      setInterviewFormData({
+        name: "",
+        role: "",
+        topic: "",
+        insights: [],
+        imageUrl: "",
+        date: "",
+      })
+      setFullInterviewFormData({
+        introduction: "",
+        videoUrl: "",
+        sections: [
+          {
+            title: "",
+            content: "",
+          },
+        ],
+        keyTakeaways: [],
+        resources: [
+          {
+            title: "",
+            url: "",
+            type: "",
+          },
+        ],
+      })
+      
+      toast({
+        title: "Success",
+        description: "Interview updated successfully!",
+      })
+    } catch (error) {
+      console.error("Error updating interview:", error)
+      toast({
+        title: "Error",
+        description: "Failed to update interview",
+        variant: "destructive",
+      })
+    }
   }
 
-  const handleAddFullInterview = () => {
-    if (!selectedInterviewId) return
+  const handleDeleteInterview = async (categoryId: string, interviewId: string) => {
+    try {
+      await axios.delete(
+        `${import.meta.env.VITE_API_BASE_URL}/expert-interviews/${categoryId}/interviews/${interviewId}`
+      )
 
-    setCategories(
-      categories.map((category) => ({
-        ...category,
-        interviews: category.interviews.map((interview) =>
-          interview.id === selectedInterviewId ? { ...interview, fullInterview: fullInterviewFormData } : interview,
-        ),
-      })),
-    )
-
-    setShowFullInterviewForm(false)
-    setSelectedInterviewId(null)
-    setFullInterviewFormData({
-      introduction: "",
-      videoUrl: "",
-      sections: [
-        {
-          title: "",
-          content: "",
-        },
-      ],
-      keyTakeaways: [],
-      resources: [
-        {
-          title: "",
-          url: "",
-          type: "",
-        },
-      ],
-    })
-    setSuccessMessage("Full interview details added successfully!")
-
-    setTimeout(() => {
-      setSuccessMessage("")
-    }, 3000)
+      setCategories(
+        categories.map((category) => ({
+          ...category,
+          interviews: category.interviews.filter((interview) => interview._id !== interviewId),
+        }))
+      )
+      
+      toast({
+        title: "Success",
+        description: "Interview deleted successfully!",
+      })
+    } catch (error) {
+      console.error("Error deleting interview:", error)
+      toast({
+        title: "Error",
+        description: "Failed to delete interview",
+        variant: "destructive",
+      })
+    }
   }
 
-  const handleUpdateFullInterview = () => {
-    if (!editingInterview) return
+  const handleUpdateFullInterview = async (categoryId: string, interviewId: string) => {
+    try {
+      const response = await axios.put(
+        `${import.meta.env.VITE_API_BASE_URL}/expert-interviews/${categoryId}/interviews/${interviewId}/full`,
+        fullInterviewFormData
+      )
 
-    setCategories(
-      categories.map((category) => ({
-        ...category,
-        interviews: category.interviews.map((interview) =>
-          interview.id === editingInterview.id ? { ...interview, fullInterview: fullInterviewFormData } : interview,
-        ),
-      })),
-    )
+      setCategories(
+        categories.map((category) => ({
+          ...category,
+          interviews: category.interviews.map((interview) =>
+            interview._id === interviewId ? response.data.data : interview
+          ),
+        }))
+      )
 
-    setShowFullInterviewForm(false)
-    setEditingInterview(null)
-    setFullInterviewFormData({
-      introduction: "",
-      videoUrl: "",
-      sections: [
-        {
-          title: "",
-          content: "",
-        },
-      ],
-      keyTakeaways: [],
-      resources: [
-        {
-          title: "",
-          url: "",
-          type: "",
-        },
-      ],
-    })
-    setSuccessMessage("Full interview details updated successfully!")
-
-    setTimeout(() => {
-      setSuccessMessage("")
-    }, 3000)
+      setEditingInterview(null)
+      setInterviewFormData({
+        name: "",
+        role: "",
+        topic: "",
+        insights: [],
+        imageUrl: "",
+        date: "",
+      })
+      setFullInterviewFormData({
+        introduction: "",
+        videoUrl: "",
+        sections: [
+          {
+            title: "",
+            content: "",
+          },
+        ],
+        keyTakeaways: [],
+        resources: [
+          {
+            title: "",
+            url: "",
+            type: "",
+          },
+        ],
+      })
+      
+      toast({
+        title: "Success",
+        description: "Full interview details updated successfully!",
+      })
+    } catch (error) {
+      console.error("Error updating full interview:", error)
+      toast({
+        title: "Error",
+        description: "Failed to update full interview details",
+        variant: "destructive",
+      })
+    }
   }
 
-  const handleDeleteInterview = (interviewId: number) => {
-    setCategories(
-      categories.map((category) => ({
-        ...category,
-        interviews: category.interviews.filter((interview) => interview.id !== interviewId),
-      })),
-    )
-    setSuccessMessage("Interview deleted successfully!")
-
-    setTimeout(() => {
-      setSuccessMessage("")
-    }, 3000)
-  }
-
-  const startEditCategory = (category: InterviewCategory) => {
+  const startEditCategory = (category: IInterviewCategory) => {
     setEditingCategory(category)
     setCategoryFormData({ category: category.category })
   }
 
-  const startEditInterview = (interview: Interview) => {
+  const startEditInterview = (interview: IInterview) => {
     setEditingInterview(interview)
     setInterviewFormData({
       name: interview.name,
@@ -494,10 +535,6 @@ export function AdminExpertInterviewsPage() {
       imageUrl: interview.imageUrl,
       date: interview.date,
     })
-  }
-
-  const startEditFullInterview = (interview: Interview) => {
-    setEditingInterview(interview)
 
     if (interview.fullInterview) {
       setFullInterviewFormData({
@@ -527,15 +564,23 @@ export function AdminExpertInterviewsPage() {
         ],
       })
     }
-
-    setShowFullInterviewForm(true)
   }
 
-  const toggleInsightsExpansion = (interviewId: number) => {
+  const toggleInsightsExpansion = (interviewId: string) => {
     setExpandedInsights((prev) => ({
       ...prev,
       [interviewId]: !prev[interviewId],
     }))
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-6 flex items-center justify-center">
+        <div className="text-center">
+          <p>Loading interview data...</p>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -554,7 +599,7 @@ export function AdminExpertInterviewsPage() {
             <button
               onClick={() => {
                 setShowAddInterviewForm(true)
-                setSelectedCategoryId(categories[0]?.id || null)
+                setSelectedCategoryId(categories[0]?._id || null)
               }}
               className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
             >
@@ -563,15 +608,6 @@ export function AdminExpertInterviewsPage() {
             </button>
           </div>
         </div>
-
-        {successMessage && (
-          <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-6">
-            <span className="block sm:inline">{successMessage}</span>
-            <button className="absolute top-0 bottom-0 right-0 px-4 py-3" onClick={() => setSuccessMessage("")}>
-              <X size={16} />
-            </button>
-          </div>
-        )}
 
         {/* Search */}
         <div className="mb-8">
@@ -626,8 +662,7 @@ export function AdminExpertInterviewsPage() {
           </div>
         )}
 
-        {/* Add/Edit Interview Form */}
-        {(showAddInterviewForm || (editingInterview && !showFullInterviewForm)) && (
+        {(showAddInterviewForm || editingInterview) && (
           <div className="bg-white rounded-lg shadow-md p-6 mb-8">
             <h2 className="text-xl font-semibold mb-4">{editingInterview ? "Edit Interview" : "Add New Interview"}</h2>
 
@@ -636,11 +671,11 @@ export function AdminExpertInterviewsPage() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">Select Category</label>
                 <select
                   value={selectedCategoryId || ""}
-                  onChange={(e) => setSelectedCategoryId(Number(e.target.value))}
+                  onChange={(e) => setSelectedCategoryId(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   {categories.map((category) => (
-                    <option key={category.id} value={category.id}>
+                    <option key={category._id} value={category._id}>
                       {category.category}
                     </option>
                   ))}
@@ -648,102 +683,293 @@ export function AdminExpertInterviewsPage() {
               </div>
             )}
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-8">
+              {/* Basic Interview Information */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
-                <input
-                  type="text"
-                  name="name"
-                  value={interviewFormData.name}
-                  onChange={handleInterviewInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="e.g., Sarah Chen"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
-                <input
-                  type="text"
-                  name="role"
-                  value={interviewFormData.role}
-                  onChange={handleInterviewInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="e.g., VP of Engineering at Google"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Topic</label>
-                <input
-                  type="text"
-                  name="topic"
-                  value={interviewFormData.topic}
-                  onChange={handleInterviewInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="e.g., Breaking into Tech Leadership"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
-                <input
-                  type="text"
-                  name="date"
-                  value={interviewFormData.date}
-                  onChange={handleInterviewInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="e.g., March 15, 2024"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Image URL</label>
-                <input
-                  type="text"
-                  name="imageUrl"
-                  value={interviewFormData.imageUrl}
-                  onChange={handleInterviewInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="URL for interviewee's image"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Key Insights</label>
-                <div className="flex gap-2 mb-2">
-                  <input
-                    type="text"
-                    value={currentInsight}
-                    onChange={(e) => setCurrentInsight(e.target.value)}
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Add a key insight"
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault()
-                        handleAddInsight()
-                      }
-                    }}
-                  />
-                  <button
-                    type="button"
-                    onClick={handleAddInsight}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-                  >
-                    Add
-                  </button>
+                <h3 className="text-lg font-medium text-gray-900 mb-4">Basic Information</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                    <input
+                      type="text"
+                      name="name"
+                      value={interviewFormData.name}
+                      onChange={handleInterviewInputChange}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="e.g., Sarah Chen"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
+                    <input
+                      type="text"
+                      name="role"
+                      value={interviewFormData.role}
+                      onChange={handleInterviewInputChange}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="e.g., VP of Engineering at Google"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Topic</label>
+                    <input
+                      type="text"
+                      name="topic"
+                      value={interviewFormData.topic}
+                      onChange={handleInterviewInputChange}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="e.g., Breaking into Tech Leadership"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
+                    <input
+                      type="text"
+                      name="date"
+                      value={interviewFormData.date}
+                      onChange={handleInterviewInputChange}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="e.g., March 15, 2024"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Image URL</label>
+                    <input
+                      type="text"
+                      name="imageUrl"
+                      value={interviewFormData.imageUrl}
+                      onChange={handleInterviewInputChange}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="URL for interviewee's image"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Key Insights</label>
+                    <div className="flex gap-2 mb-2">
+                      <input
+                        type="text"
+                        value={currentInsight}
+                        onChange={(e) => setCurrentInsight(e.target.value)}
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="Add a key insight"
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault()
+                            handleAddInsight()
+                          }
+                        }}
+                      />
+                      <button
+                        type="button"
+                        onClick={handleAddInsight}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                      >
+                        Add
+                      </button>
+                    </div>
+                    {interviewFormData.insights.length > 0 && (
+                      <div className="mt-2 space-y-2">
+                        {interviewFormData.insights.map((insight, index) => (
+                          <div key={index} className="flex items-center justify-between bg-gray-50 p-2 rounded-md">
+                            <span>{insight}</span>
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveInsight(index)}
+                              className="text-red-600 hover:text-red-700"
+                            >
+                              <X size={16} />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
-                {interviewFormData.insights.length > 0 && (
-                  <div className="mt-2 space-y-2">
-                    {interviewFormData.insights.map((insight, index) => (
-                      <div key={index} className="flex items-center justify-between bg-gray-50 p-2 rounded-md">
-                        <span>{insight}</span>
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveInsight(index)}
-                          className="text-red-600 hover:text-red-700"
-                        >
-                          <X size={16} />
-                        </button>
+              </div>
+
+              {/* Full Interview Details */}
+              <div>
+                <h3 className="text-lg font-medium text-gray-900 mb-4">Full Interview Details</h3>
+                <div className="space-y-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Introduction</label>
+                    <textarea
+                      value={fullInterviewFormData.introduction}
+                      onChange={(e) => handleFullInterviewInputChange(e, "introduction")}
+                      rows={4}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Detailed introduction to the interview"
+                    ></textarea>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Video URL (optional)</label>
+                    <input
+                      type="text"
+                      value={fullInterviewFormData.videoUrl}
+                      onChange={(e) => handleFullInterviewInputChange(e, "videoUrl")}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="e.g., https://www.youtube.com/embed/..."
+                    />
+                  </div>
+
+                  <div>
+                    <div className="flex justify-between items-center mb-2">
+                      <h3 className="font-medium text-gray-900">Interview Sections</h3>
+                      <button
+                        type="button"
+                        onClick={addSection}
+                        className="text-blue-600 hover:text-blue-700 flex items-center"
+                      >
+                        <Plus size={16} className="mr-1" />
+                        Add Section
+                      </button>
+                    </div>
+
+                    {fullInterviewFormData.sections.map((section, index) => (
+                      <div key={index} className="border border-gray-200 rounded-md p-4 mb-4">
+                        <div className="flex justify-between items-center mb-2">
+                          <h4 className="font-medium">Section {index + 1}</h4>
+                          {fullInterviewFormData.sections.length > 1 && (
+                            <button onClick={() => removeSection(index)} className="text-red-600 hover:text-red-700">
+                              <Trash size={16} />
+                            </button>
+                          )}
+                        </div>
+
+                        <div className="space-y-4">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Section Title</label>
+                            <input
+                              type="text"
+                              value={section.title}
+                              onChange={(e) => handleSectionChange(index, "title", e.target.value)}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              placeholder="e.g., Journey to Leadership"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Section Content</label>
+                            <textarea
+                              value={section.content}
+                              onChange={(e) => handleSectionChange(index, "content", e.target.value)}
+                              rows={4}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              placeholder="Content for this section"
+                            ></textarea>
+                          </div>
+                        </div>
                       </div>
                     ))}
                   </div>
-                )}
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Key Takeaways</label>
+                    <div className="flex gap-2 mb-2">
+                      <input
+                        type="text"
+                        value={currentKeyTakeaway}
+                        onChange={(e) => setCurrentKeyTakeaway(e.target.value)}
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="Add a key takeaway"
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault()
+                            handleAddKeyTakeaway()
+                          }
+                        }}
+                      />
+                      <button
+                        type="button"
+                        onClick={handleAddKeyTakeaway}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                      >
+                        Add
+                      </button>
+                    </div>
+                    {fullInterviewFormData.keyTakeaways.length > 0 && (
+                      <div className="mt-2 space-y-2">
+                        {fullInterviewFormData.keyTakeaways.map((takeaway, index) => (
+                          <div key={index} className="flex items-center justify-between bg-gray-50 p-2 rounded-md">
+                            <span>{takeaway}</span>
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveKeyTakeaway(index)}
+                              className="text-red-600 hover:text-red-700"
+                            >
+                              <X size={16} />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <div>
+                    <div className="flex justify-between items-center mb-2">
+                      <h3 className="font-medium text-gray-900">Additional Resources</h3>
+                      <button
+                        type="button"
+                        onClick={addResource}
+                        className="text-blue-600 hover:text-blue-700 flex items-center"
+                      >
+                        <Plus size={16} className="mr-1" />
+                        Add Resource
+                      </button>
+                    </div>
+
+                    {fullInterviewFormData.resources.map((resource, index) => (
+                      <div key={index} className="border border-gray-200 rounded-md p-4 mb-4">
+                        <div className="flex justify-between items-center mb-2">
+                          <h4 className="font-medium">Resource {index + 1}</h4>
+                          {fullInterviewFormData.resources.length > 1 && (
+                            <button onClick={() => removeResource(index)} className="text-red-600 hover:text-red-700">
+                              <Trash size={16} />
+                            </button>
+                          )}
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
+                            <input
+                              type="text"
+                              value={resource.title}
+                              onChange={(e) => handleResourceChange(index, "title", e.target.value)}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              placeholder="e.g., Leadership in Tech: A Guide"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">URL</label>
+                            <input
+                              type="text"
+                              value={resource.url}
+                              onChange={(e) => handleResourceChange(index, "url", e.target.value)}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              placeholder="e.g., https://example.com/guide"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
+                            <select
+                              value={resource.type}
+                              onChange={(e) => handleResourceChange(index, "type", e.target.value)}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            >
+                              <option value="">Select type</option>
+                              <option value="PDF">PDF</option>
+                              <option value="Webinar">Webinar</option>
+                              <option value="Article">Article</option>
+                              <option value="Video">Video</option>
+                              <option value="Book">Book</option>
+                            </select>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -761,234 +987,6 @@ export function AdminExpertInterviewsPage() {
                     imageUrl: "",
                     date: "",
                   })
-                }}
-                className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={editingInterview ? handleUpdateInterview : handleAddInterview}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-              >
-                {editingInterview ? "Update Interview" : "Add Interview"}
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Add/Edit Full Interview Form */}
-        {showFullInterviewForm && (
-          <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-            <h2 className="text-xl font-semibold mb-4">
-              {editingInterview?.fullInterview ? "Edit Full Interview Details" : "Add Full Interview Details"}
-            </h2>
-
-            {!editingInterview && (
-              <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Select Interview</label>
-                <select
-                  value={selectedInterviewId || ""}
-                  onChange={(e) => setSelectedInterviewId(Number(e.target.value))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  {categories.flatMap((category) =>
-                    category.interviews.map((interview) => (
-                      <option key={interview.id} value={interview.id}>
-                        {interview.name} - {interview.topic}
-                      </option>
-                    )),
-                  )}
-                </select>
-              </div>
-            )}
-
-            <div className="space-y-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Introduction</label>
-                <textarea
-                  value={fullInterviewFormData.introduction}
-                  onChange={(e) => handleFullInterviewInputChange(e, "introduction")}
-                  rows={4}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Detailed introduction to the interview"
-                ></textarea>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Video URL (optional)</label>
-                <input
-                  type="text"
-                  value={fullInterviewFormData.videoUrl}
-                  onChange={(e) => handleFullInterviewInputChange(e, "videoUrl")}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="e.g., https://www.youtube.com/embed/..."
-                />
-              </div>
-
-              <div>
-                <div className="flex justify-between items-center mb-2">
-                  <h3 className="font-medium text-gray-900">Interview Sections</h3>
-                  <button
-                    type="button"
-                    onClick={addSection}
-                    className="text-blue-600 hover:text-blue-700 flex items-center"
-                  >
-                    <Plus size={16} className="mr-1" />
-                    Add Section
-                  </button>
-                </div>
-
-                {fullInterviewFormData.sections.map((section, index) => (
-                  <div key={index} className="border border-gray-200 rounded-md p-4 mb-4">
-                    <div className="flex justify-between items-center mb-2">
-                      <h4 className="font-medium">Section {index + 1}</h4>
-                      {fullInterviewFormData.sections.length > 1 && (
-                        <button onClick={() => removeSection(index)} className="text-red-600 hover:text-red-700">
-                          <Trash size={16} />
-                        </button>
-                      )}
-                    </div>
-
-                    <div className="space-y-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Section Title</label>
-                        <input
-                          type="text"
-                          value={section.title}
-                          onChange={(e) => handleSectionChange(index, "title", e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          placeholder="e.g., Journey to Leadership"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Section Content</label>
-                        <textarea
-                          value={section.content}
-                          onChange={(e) => handleSectionChange(index, "content", e.target.value)}
-                          rows={4}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          placeholder="Content for this section"
-                        ></textarea>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Key Takeaways</label>
-                <div className="flex gap-2 mb-2">
-                  <input
-                    type="text"
-                    value={currentKeyTakeaway}
-                    onChange={(e) => setCurrentKeyTakeaway(e.target.value)}
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Add a key takeaway"
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault()
-                        handleAddKeyTakeaway()
-                      }
-                    }}
-                  />
-                  <button
-                    type="button"
-                    onClick={handleAddKeyTakeaway}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-                  >
-                    Add
-                  </button>
-                </div>
-                {fullInterviewFormData.keyTakeaways.length > 0 && (
-                  <div className="mt-2 space-y-2">
-                    {fullInterviewFormData.keyTakeaways.map((takeaway, index) => (
-                      <div key={index} className="flex items-center justify-between bg-gray-50 p-2 rounded-md">
-                        <span>{takeaway}</span>
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveKeyTakeaway(index)}
-                          className="text-red-600 hover:text-red-700"
-                        >
-                          <X size={16} />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              <div>
-                <div className="flex justify-between items-center mb-2">
-                  <h3 className="font-medium text-gray-900">Additional Resources</h3>
-                  <button
-                    type="button"
-                    onClick={addResource}
-                    className="text-blue-600 hover:text-blue-700 flex items-center"
-                  >
-                    <Plus size={16} className="mr-1" />
-                    Add Resource
-                  </button>
-                </div>
-
-                {fullInterviewFormData.resources.map((resource, index) => (
-                  <div key={index} className="border border-gray-200 rounded-md p-4 mb-4">
-                    <div className="flex justify-between items-center mb-2">
-                      <h4 className="font-medium">Resource {index + 1}</h4>
-                      {fullInterviewFormData.resources.length > 1 && (
-                        <button onClick={() => removeResource(index)} className="text-red-600 hover:text-red-700">
-                          <Trash size={16} />
-                        </button>
-                      )}
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
-                        <input
-                          type="text"
-                          value={resource.title}
-                          onChange={(e) => handleResourceChange(index, "title", e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          placeholder="e.g., Leadership in Tech: A Guide"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">URL</label>
-                        <input
-                          type="text"
-                          value={resource.url}
-                          onChange={(e) => handleResourceChange(index, "url", e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          placeholder="e.g., https://example.com/guide"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
-                        <select
-                          value={resource.type}
-                          onChange={(e) => handleResourceChange(index, "type", e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        >
-                          <option value="">Select type</option>
-                          <option value="PDF">PDF</option>
-                          <option value="Webinar">Webinar</option>
-                          <option value="Article">Article</option>
-                          <option value="Video">Video</option>
-                          <option value="Book">Book</option>
-                        </select>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="flex justify-end mt-6 gap-4">
-              <button
-                onClick={() => {
-                  setShowFullInterviewForm(false)
-                  setEditingInterview(null)
-                  setSelectedInterviewId(null)
                   setFullInterviewFormData({
                     introduction: "",
                     videoUrl: "",
@@ -1013,10 +1011,16 @@ export function AdminExpertInterviewsPage() {
                 Cancel
               </button>
               <button
-                onClick={editingInterview?.fullInterview ? handleUpdateFullInterview : handleAddFullInterview}
+                onClick={() => {
+                  if (editingInterview && editingInterview._id && selectedCategoryId) {
+                    handleUpdateFullInterview(selectedCategoryId, editingInterview._id)
+                  } else {
+                    handleAddInterview()
+                  }
+                }}
                 className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
               >
-                {editingInterview?.fullInterview ? "Update Full Interview" : "Add Full Interview"}
+                {editingInterview ? "Update Interview" : "Add Interview"}
               </button>
             </div>
           </div>
@@ -1029,7 +1033,7 @@ export function AdminExpertInterviewsPage() {
           </div>
         ) : (
           filteredCategories.map((category) => (
-            <div key={category.id} className="bg-white rounded-lg shadow-md p-6 mb-8">
+            <div key={category._id} className="bg-white rounded-lg shadow-md p-6 mb-8">
               <div className="flex justify-between items-start mb-6">
                 <h2 className="text-2xl font-semibold text-gray-900">{category.category}</h2>
                 <div className="flex gap-2">
@@ -1040,7 +1044,7 @@ export function AdminExpertInterviewsPage() {
                     <Edit size={18} />
                   </button>
                   <button
-                    onClick={() => handleDeleteCategory(category.id)}
+                    onClick={() => handleDeleteCategory(category._id)}
                     className="p-2 text-red-600 hover:bg-red-50 rounded-md"
                   >
                     <Trash size={18} />
@@ -1050,7 +1054,7 @@ export function AdminExpertInterviewsPage() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {category.interviews.map((interview) => (
-                  <div key={interview.id} className="border border-gray-200 rounded-lg p-4">
+                  <div key={interview._id} className="border border-gray-200 rounded-lg p-4">
                     <div className="flex justify-between items-start">
                       <div className="flex gap-4">
                         <img
@@ -1066,13 +1070,16 @@ export function AdminExpertInterviewsPage() {
                       </div>
                       <div className="flex gap-2">
                         <button
-                          onClick={() => startEditInterview(interview)}
+                          onClick={() => {
+                            startEditInterview(interview)
+                            setSelectedCategoryId(category._id)
+                          }}
                           className="p-1 text-blue-600 hover:bg-blue-50 rounded-md"
                         >
                           <Edit size={16} />
                         </button>
                         <button
-                          onClick={() => handleDeleteInterview(interview.id)}
+                          onClick={() => handleDeleteInterview(category._id, interview._id)}
                           className="p-1 text-red-600 hover:bg-red-50 rounded-md"
                         >
                           <Trash size={16} />
@@ -1084,9 +1091,10 @@ export function AdminExpertInterviewsPage() {
                       <div className="flex items-center text-sm text-gray-600 mb-2">
                         <Calendar className="h-4 w-4 mr-2" />
                         {interview.date}
+                     
                       </div>
                       <div className="flex flex-wrap gap-2">
-                        {expandedInsights[interview.id] ? (
+                        {expandedInsights[interview._id] ? (
                           <>
                             {interview.insights.map((insight, index) => (
                               <span key={index} className="px-2 py-1 bg-blue-50 text-blue-700 rounded-full text-xs">
@@ -1094,7 +1102,7 @@ export function AdminExpertInterviewsPage() {
                               </span>
                             ))}
                             <button
-                              onClick={() => toggleInsightsExpansion(interview.id)}
+                              onClick={() => toggleInsightsExpansion(interview._id)}
                               className="px-2 py-1 bg-gray-100 text-gray-700 rounded-full text-xs hover:bg-gray-200"
                             >
                               Show less
@@ -1109,7 +1117,7 @@ export function AdminExpertInterviewsPage() {
                             )}
                             {interview.insights.length > 1 && (
                               <button
-                                onClick={() => toggleInsightsExpansion(interview.id)}
+                                onClick={() => toggleInsightsExpansion(interview._id)}
                                 className="px-2 py-1 bg-gray-100 text-gray-700 rounded-full text-xs hover:bg-gray-200"
                               >
                                 +{interview.insights.length - 1} more
@@ -1133,10 +1141,10 @@ export function AdminExpertInterviewsPage() {
                         )}
                       </div>
                       <button
-                        onClick={() => startEditFullInterview(interview)}
+                        onClick={() => startEditInterview(interview)}
                         className="text-blue-600 hover:text-blue-700 text-sm"
                       >
-                        {interview.fullInterview ? "Edit full details" : "Add full details"}
+                        Edit interview
                       </button>
                     </div>
                   </div>
@@ -1147,7 +1155,7 @@ export function AdminExpertInterviewsPage() {
                 <button
                   onClick={() => {
                     setShowAddInterviewForm(true)
-                    setSelectedCategoryId(category.id)
+                    setSelectedCategoryId(category._id)
                   }}
                   className="text-blue-600 hover:text-blue-700 flex items-center"
                 >
