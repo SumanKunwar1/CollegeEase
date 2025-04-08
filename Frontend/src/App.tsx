@@ -144,7 +144,7 @@ import { AdminFAQPage } from "./pages/admin/footer/AdminFaqs";
 import { AdminCookiesPage } from "./pages/admin/footer/AdminCookies";
 import { AdminPrivacyPolicyPage } from "./pages/admin/footer/AdminPrivacyPolicy";
 import { AdminTermsOfServicePage } from "./pages/admin/footer/AdmingTermsOfService";
-import { AdminSupportPage } from "./pages/admin/footer/AdminSupport";
+import AdminSupportPage from "./pages/admin/footer/AdminSupport";
 
 import AdminSignIn from "./pages/admin/SignUp";
 

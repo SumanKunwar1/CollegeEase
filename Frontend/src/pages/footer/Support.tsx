@@ -1,6 +1,46 @@
 import { Mail, Phone, MessageSquare, Clock } from "lucide-react";
+import { useState } from 'react';
+import axios from 'axios';
+import { toast } from 'react-toastify';
 
 function SupportPage() {
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    subject: '',
+    message: ''
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+
+    try {
+      const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/support`, formData);
+      toast.success('Your support request has been submitted successfully!');
+      setFormData({
+        name: '',
+        email: '',
+        subject: '',
+        message: ''
+      });
+    } catch (error) {
+      toast.error('Failed to submit support request. Please try again.');
+      console.error('Error submitting support request:', error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -57,7 +97,7 @@ function SupportPage() {
             <h2 className="text-2xl font-semibold text-gray-900 mb-6">
               Send Us a Message
             </h2>
-            <form className="space-y-4">
+            <form className="space-y-4" onSubmit={handleSubmit}>
               <div>
                 <label
                   htmlFor="name"
@@ -68,7 +108,11 @@ function SupportPage() {
                 <input
                   type="text"
                   id="name"
+                  name="name"
+                  value={formData.name}
+                  onChange={handleChange}
                   className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                  required
                 />
               </div>
               <div>
@@ -81,7 +125,11 @@ function SupportPage() {
                 <input
                   type="email"
                   id="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleChange}
                   className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                  required
                 />
               </div>
               <div>
@@ -94,7 +142,11 @@ function SupportPage() {
                 <input
                   type="text"
                   id="subject"
+                  name="subject"
+                  value={formData.subject}
+                  onChange={handleChange}
                   className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                  required
                 />
               </div>
               <div>
@@ -106,15 +158,20 @@ function SupportPage() {
                 </label>
                 <textarea
                   id="message"
+                  name="message"
                   rows={4}
+                  value={formData.message}
+                  onChange={handleChange}
                   className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                  required
                 ></textarea>
               </div>
               <button
                 type="submit"
-                className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors"
+                disabled={isSubmitting}
+                className={`w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors ${isSubmitting ? 'opacity-70 cursor-not-allowed' : ''}`}
               >
-                Send Message
+                {isSubmitting ? 'Sending...' : 'Send Message'}
               </button>
             </form>
           </div>
