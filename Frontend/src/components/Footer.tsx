@@ -143,7 +143,7 @@ const Footer = () => {
               </li>
               <li>
                 <a
-                  href="/success-stories"
+                  href="/scholarships/success-stories"
                   className="text-gray-400 hover:text-yellow-400 flex items-center transition-colors"
                 >
                   <ChevronRight className="h-4 w-4 mr-2 text-blue-500" />
@@ -152,8 +152,7 @@ const Footer = () => {
               </li>
               <li>
                 <a
-                  href="mentorship/find-mentor/
-"
+                  href="/mentorship/find-mentor/"
                   className="text-gray-400 hover:text-yellow-400 flex items-center transition-colors"
                 >
                   <ChevronRight className="h-4 w-4 mr-2 text-blue-500" />
