@@ -91,3 +91,17 @@ export const deleteBlogPost = asyncHandler(async (req: Request, res: Response, n
     data: {}
   });
 });
+
+export const getBlogPostBySlug = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+    const blogPost = await BlogPost.findOne({ slug: req.params.slug });
+  
+    if (!blogPost) {
+      res.status(404);
+      throw new Error('Blog post not found');
+    }
+  
+    res.status(200).json({
+      success: true,
+      data: blogPost
+    });
+  });

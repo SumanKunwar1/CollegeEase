@@ -16,6 +16,7 @@ export interface IBlogPost extends Document {
   content: IContentSection[];
   createdAt: Date;
   updatedAt: Date;
+  slug:string;
 }
 
 const contentSectionSchema = new Schema<IContentSection>({
@@ -24,16 +25,17 @@ const contentSectionSchema = new Schema<IContentSection>({
 });
 
 const blogPostSchema = new Schema<IBlogPost>({
-  title: { type: String, required: true },
-  excerpt: { type: String, required: false },
-  author: { type: String, required: true },
-  date: { type: String, required: false },
-  readTime: { type: String, required: false },
-  image: { type: String, required: true },
-  content: [contentSectionSchema]
-}, {
-  timestamps: true
-});
+    title: { type: String, required: true },
+    excerpt: { type: String, required: false },
+    author: { type: String, required: true },
+    date: { type: String, required: false },
+    readTime: { type: String, required: false },
+    image: { type: String, required: true },
+    content: [contentSectionSchema],
+    slug: { type: String, required: true, unique: true }
+  }, {
+    timestamps: true
+  });
 
 const BlogPost = mongoose.model<IBlogPost>('BlogPost', blogPostSchema);
 export default BlogPost;

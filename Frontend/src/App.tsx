@@ -312,7 +312,7 @@ function AppContent() {
           <Route path="/connect" element={<ConnectPage />} />
 
           <Route path="/blog" element={<BlogPage />} />
-          <Route path="/blog/:title" element={<BlogDetails />} />
+          <Route path="/blog/:id" element={<BlogDetails />} />
           <Route path="/faq" element={<FAQsPage />} />
           <Route path="/support" element={<SupportPage />} />
           <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
