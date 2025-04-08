@@ -40,6 +40,7 @@ import jobMarketAnalysisRouter from './routes/jobMarketAnalysis.routes';
 import blogRoutes from './routes/blog.routes';
 import faqRoutes from './routes/faq.routes';
 import supportRouter from './routes/supportRequest.routes';
+import heroRouter from './routes/hero.routes';
 
 
 dotenv.config();
@@ -112,6 +113,7 @@ app.use('/api/v1/job-market', jobMarketAnalysisRouter);
 app.use('/api/v1/blog', blogRoutes);
 app.use('/api/v1/faqs', faqRoutes);
 app.use('/api/v1/support', supportRouter);
+app.use('/api/v1/hero', heroRouter);
 
 // Error handling
 app.use(errorHandler);
