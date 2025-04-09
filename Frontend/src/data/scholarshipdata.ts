@@ -33,17 +33,13 @@ export const scholarshipsData: ScholarshipDetails[] = [
       },
     },
     vision: {
-      purpose:
-        "To empower exceptional students worldwide to pursue their academic dreams without financial barriers.",
-      impact:
-        "Supporting the next generation of global leaders and innovators through quality education.",
-      goals:
-        "Create a diverse, international network of scholars who will drive positive change in their communities.",
+      purpose: "To empower exceptional students worldwide to pursue their academic dreams without financial barriers.",
+      impact: "Supporting the next generation of global leaders and innovators through quality education.",
+      goals: "Create a diverse, international network of scholars who will drive positive change in their communities.",
     },
     institution: {
       name: "International Education Foundation",
-      history:
-        "Established in 1990, the IEF has supported over 10,000 students globally.",
+      history: "Established in 1990, the IEF has supported over 10,000 students globally.",
       achievements: [
         "Ranked #1 in educational impact by Global Education Review",
         "Over 90% graduation rate among scholarship recipients",
@@ -73,8 +69,7 @@ export const scholarshipsData: ScholarshipDetails[] = [
         "Strong academic record in relevant field",
         "Research experience (for graduate programs)",
       ],
-      financialNeed:
-        "Demonstrated financial need may be considered but is not required",
+      financialNeed: "Demonstrated financial need may be considered but is not required",
       nationality: ["All nationalities eligible"],
       ageLimit: "Under 35 years at the time of application",
       studyLevel: ["Undergraduate", "Graduate", "Doctorate"],
@@ -113,5 +108,6 @@ export const scholarshipsData: ScholarshipDetails[] = [
       "Interview (if shortlisted)",
     ],
     status: "Open",
+    _id: undefined
   },
 ];
