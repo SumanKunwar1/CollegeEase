@@ -16,6 +16,8 @@ const CollegesPage = () => {
   const [colleges, setColleges] = useState<College[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const collegesPerPage = 15;
 
   // Fetch colleges from backend
   useEffect(() => {
@@ -86,18 +88,28 @@ const CollegesPage = () => {
     });
   }, [colleges, searchQuery, filters]);
 
+  // Get current colleges for pagination
+  const indexOfLastCollege = currentPage * collegesPerPage;
+  const indexOfFirstCollege = indexOfLastCollege - collegesPerPage;
+  const currentColleges = filteredColleges.slice(indexOfFirstCollege, indexOfLastCollege);
+  const totalPages = Math.ceil(filteredColleges.length / collegesPerPage);
+
   const resetFilters = () => {
     setFilters({
       location: "",
       course: "",
       tuitionRange: "",
     });
+    setCurrentPage(1);
   };
 
   const handleViewDetails = (organizationName: string) => {
-    // Navigate directly to the college details page using the organizationName
-    // The CollegeDetails component will fetch the data when it loads
     navigate(`/colleges/${encodeURIComponent(organizationName)}`);
+  };
+
+  const paginate = (pageNumber: number) => {
+    setCurrentPage(pageNumber);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   if (loading) {
@@ -279,11 +291,14 @@ const CollegesPage = () => {
           <p className="text-gray-600">
             Showing {filteredColleges.length}{" "}
             {filteredColleges.length === 1 ? "college" : "colleges"}
+            {filteredColleges.length > collegesPerPage && (
+              <span> (Page {currentPage} of {totalPages})</span>
+            )}
           </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {filteredColleges.map((college) => (
+          {currentColleges.map((college) => (
             <div
               key={college.id}
               className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow"
@@ -346,6 +361,48 @@ const CollegesPage = () => {
               No colleges found matching your criteria. Try adjusting your
               filters.
             </p>
+          </div>
+        )}
+
+        {totalPages > 1 && (
+          <div className="flex justify-center mt-8">
+            <nav className="inline-flex rounded-md shadow">
+              <button
+                onClick={() => paginate(Math.max(1, currentPage - 1))}
+                disabled={currentPage === 1}
+                className={`px-3 py-2 rounded-l-md border border-gray-300 ${
+                  currentPage === 1
+                    ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                    : "bg-white text-gray-700 hover:bg-gray-50"
+                }`}
+              >
+                Previous
+              </button>
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((number) => (
+                <button
+                  key={number}
+                  onClick={() => paginate(number)}
+                  className={`px-3 py-2 border-t border-b border-gray-300 ${
+                    currentPage === number
+                      ? "bg-blue-50 border-blue-500 text-blue-600"
+                      : "bg-white text-gray-700 hover:bg-gray-50"
+                  }`}
+                >
+                  {number}
+                </button>
+              ))}
+              <button
+                onClick={() => paginate(Math.min(totalPages, currentPage + 1))}
+                disabled={currentPage === totalPages}
+                className={`px-3 py-2 rounded-r-md border border-gray-300 ${
+                  currentPage === totalPages
+                    ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                    : "bg-white text-gray-700 hover:bg-gray-50"
+                }`}
+              >
+                Next
+              </button>
+            </nav>
           </div>
         )}
       </div>
