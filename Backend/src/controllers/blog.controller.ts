@@ -1,11 +1,14 @@
-// controllers/blog.controller.ts
 import { Request, Response, NextFunction } from 'express';
 import BlogPost, { IBlogPost, IContentSection } from '../models/blog.model';
 import { asyncHandler } from '../utils/asyncHandler';
+import slugify from 'slugify';
 
 // Create a new blog post
 export const createBlogPost = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
   const { title, excerpt, author, date, readTime, image, content } = req.body;
+
+  // Generate slug from title
+  const slug = slugify(title, { lower: true, strict: true });
 
   const blogPost = await BlogPost.create({
     title,
@@ -14,12 +17,45 @@ export const createBlogPost = asyncHandler(async (req: Request, res: Response, n
     date,
     readTime,
     image,
-    content
+    content,
+    slug
   });
 
   res.status(201).json({
     success: true,
     data: blogPost
+  });
+});
+
+// Update a blog post
+export const updateBlogPost = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+  const { title, excerpt, author, date, readTime, image, content } = req.body;
+
+  const blogPost = await BlogPost.findById(req.params.id);
+
+  if (!blogPost) {
+    res.status(404);
+    throw new Error('Blog post not found');
+  }
+
+  // Update slug if title changed
+  if (title && title !== blogPost.title) {
+    blogPost.slug = slugify(title, { lower: true, strict: true });
+  }
+
+  blogPost.title = title || blogPost.title;
+  blogPost.excerpt = excerpt || blogPost.excerpt;
+  blogPost.author = author || blogPost.author;
+  blogPost.date = date || blogPost.date;
+  blogPost.readTime = readTime || blogPost.readTime;
+  blogPost.image = image || blogPost.image;
+  blogPost.content = content || blogPost.content;
+
+  const updatedBlogPost = await blogPost.save();
+
+  res.status(200).json({
+    success: true,
+    data: updatedBlogPost
   });
 });
 
@@ -48,32 +84,7 @@ export const getBlogPostById = asyncHandler(async (req: Request, res: Response, 
   });
 });
 
-// Update a blog post
-export const updateBlogPost = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
-  const { title, excerpt, author, date, readTime, image, content } = req.body;
 
-  const blogPost = await BlogPost.findById(req.params.id);
-
-  if (!blogPost) {
-    res.status(404);
-    throw new Error('Blog post not found');
-  }
-
-  blogPost.title = title || blogPost.title;
-  blogPost.excerpt = excerpt || blogPost.excerpt;
-  blogPost.author = author || blogPost.author;
-  blogPost.date = date || blogPost.date;
-  blogPost.readTime = readTime || blogPost.readTime;
-  blogPost.image = image || blogPost.image;
-  blogPost.content = content || blogPost.content;
-
-  const updatedBlogPost = await blogPost.save();
-
-  res.status(200).json({
-    success: true,
-    data: updatedBlogPost
-  });
-});
 
 // Delete a blog post
 export const deleteBlogPost = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
