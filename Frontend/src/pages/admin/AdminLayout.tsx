@@ -5,7 +5,6 @@ import {
   Award,
   Heart,
   MessageSquare,
-  Settings,
   Menu,
   X,
   ChevronDown,
@@ -112,7 +111,6 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
       ],
     },
     { title: "User Registrtion", icon: User, path: "/admin/registration" },
-    { title: "Settings", icon: Settings, path: "/admin/settings" },
     {
       title: "Footer",
       icon: UsersRound,
