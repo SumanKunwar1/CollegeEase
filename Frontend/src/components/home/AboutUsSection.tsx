@@ -9,8 +9,14 @@ const AboutUsPreview: FC = () => {
   const collegeImages = [
     "https://ideogram.ai/assets/progressive-image/balanced/response/82HYZav7RUyrnEvEtw0nAw",
     "https://ideogram.ai/assets/progressive-image/balanced/response/JpKfeL-pSIKrNQGq9H8AVw",
+    "https://ideogram.ai/assets/image/lossless/response/qOv1KspWTqGW6sW44ajLlw",
     "https://ideogram.ai/assets/progressive-image/balanced/response/PM6cFxxoSKKd-SORwSkEog",
-    "https://ideogram.ai/assets/progressive-image/balanced/response/iaQ4hym-RneVVLaGX0nCjQ"
+    "https://ideogram.ai/assets/image/lossless/response/A7FMDb7iQYeozfh-lcWJQg",
+    "https://ideogram.ai/assets/progressive-image/balanced/response/-zaTf3_RQ82NIhDQx7RHoQ",
+    "https://ideogram.ai/assets/progressive-image/balanced/response/iaQ4hym-RneVVLaGX0nCjQ",
+    "https://ideogram.ai/assets/progressive-image/balanced/response/AR46udBwTZem5U_3lL4zwg",
+    "https://img.freepik.com/premium-photo/technology-diversity-friends-restaurant-together-social-gathering-with-phone-tablet-networking-coffee-shop-brunch-people-relax-sidewalk-cafe-with-text-email-digital-app_590464-297022.jpg?w=996"
+
   ]
 
   // Create a ref to measure the container
